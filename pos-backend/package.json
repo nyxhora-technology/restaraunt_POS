@@ -1,0 +1,36 @@
+{
+  "name": "pos-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon app.js",
+    "start": "node app.js",
+    "check": "prisma validate && node --check app.js",
+    "check:tables": "node scripts/table-combination-check.js",
+    "make-admin": "node scripts/make-admin.js",
+    "smoke": "node scripts/smoke-test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "better-auth": "^1.6.22",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^8.5.2",
+    "helmet": "^8.2.0",
+    "http-errors": "^2.0.0",
+    "razorpay": "^2.9.5",
+    "resend": "^6.16.0",
+    "socket.io": "^4.8.3",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "prisma": "^6.19.3"
+  }
+}
