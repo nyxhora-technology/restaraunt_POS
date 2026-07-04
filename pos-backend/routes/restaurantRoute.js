@@ -13,6 +13,7 @@ const { requireAuth } = require("../middlewares/requireAuth");
 const { requireTenant } = require("../middlewares/requireTenant");
 const { requireRole } = require("../middlewares/requireRole");
 const { validate } = require("../middlewares/validate");
+const { checkPlanLimit } = require("../middlewares/checkPlanLimit");
 
 const router = express.Router();
 const profileFields = {
@@ -58,6 +59,7 @@ router.post(
   "/staff/invite",
   requireTenant,
   requireRole("OWNER", "MANAGER"),
+  checkPlanLimit("staff_seats"),
   validate(
     z.object({
       name: z.string().trim().min(2).max(100),

@@ -25,6 +25,7 @@ import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import PopularDishes from "../components/home/PopularDishes";
 import SetupChecklist from "../components/home/SetupChecklist";
+import PlanUsageBar from "../components/home/PlanUsageBar";
 import useDashboardPreferences from "../hooks/useDashboardPreferences";
 import useCurrency from "../hooks/useCurrency";
 import { getDashboard } from "../https";
@@ -229,6 +230,9 @@ const Home = () => {
                 available.
               </div>
             )}
+
+            {/* Plan usage bar — shown only on Starter, hidden on Pro/Enterprise */}
+            <PlanUsageBar />
 
             {/* Zeigarnik setup checklist — shown until owner completes all steps */}
             {user.role === "OWNER" && <SetupChecklist />}

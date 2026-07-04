@@ -34,6 +34,8 @@ const More          = lazy(() => import("./pages/More"));
 const Inventory     = lazy(() => import("./pages/Inventory"));
 const Landing       = lazy(() => import("./pages/Landing"));
 const AuthCallback  = lazy(() => import("./pages/AuthCallback"));
+const Terms         = lazy(() => import("./pages/Terms"));
+const Privacy       = lazy(() => import("./pages/Privacy"));
 
 // ── Role sets used in route guards ─────────────────────────────────────────
 // Kept here so changes to access rules are one-liners in this file.
@@ -61,6 +63,8 @@ function Layout() {
 
         {/* ── Public ─────────────────────────────────────────────────── */}
         <Route path="/qr/:slug" element={<QrMenu />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
 
         {/* ── Auth ───────────────────────────────────────────────────── */}
         <Route

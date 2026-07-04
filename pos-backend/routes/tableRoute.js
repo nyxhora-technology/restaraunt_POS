@@ -4,6 +4,7 @@ const controller = require("../controllers/tableController");
 const { requireTenant } = require("../middlewares/requireTenant");
 const { requireRole } = require("../middlewares/requireRole");
 const { validate } = require("../middlewares/validate");
+const { checkPlanLimit } = require("../middlewares/checkPlanLimit");
 
 const router = express.Router();
 
@@ -102,6 +103,7 @@ router.get(
 router.post(
   "/",
   requireRole("OWNER", "MANAGER"),
+  checkPlanLimit("tables"),
   validate(tableCapacityInput),
   controller.addTable,
 );

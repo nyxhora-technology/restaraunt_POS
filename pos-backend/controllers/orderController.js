@@ -739,6 +739,45 @@ const updateOrderItems = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /api/order/usage
+ * Returns this month's order count vs the plan limit.
+ * Used by the frontend to render the usage bar.
+ */
+const getOrderUsage = async (req, res, next) => {
+  try {
+    const { getPlanLimit } = require("../config/planFeatures");
+    const restaurantId = req.restaurant?.id;
+    const plan = req.restaurant?.plan || "STARTER";
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
+    const ordersThisMonth = await prisma.order.count({
+      where: { restaurantId, createdAt: { gte: startOfMonth, lte: endOfMonth } },
+    });
+
+    const limit = getPlanLimit(plan, "orders_per_month");
+    const percentage = limit ? Math.min(100, Math.round((ordersThisMonth / limit) * 100)) : 0;
+
+    res.json({
+      success: true,
+      data: {
+        plan,
+        ordersThisMonth,
+        limit,           // null = unlimited
+        percentage,      // 0-100; 0 when unlimited
+        unlimited: limit === null,
+        periodStart: startOfMonth,
+        periodEnd: endOfMonth,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   addOrder,
   getOrderById,
@@ -747,4 +786,5 @@ module.exports = {
   getDashboard,
   updateOrderStatus,
   updateOrderItems,
+  getOrderUsage,
 };

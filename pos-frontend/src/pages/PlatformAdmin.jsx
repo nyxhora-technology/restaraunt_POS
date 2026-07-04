@@ -7,6 +7,7 @@ import {
   getPlatformUsers,
   getRestaurants,
   updateRestaurantStatus,
+  updateRestaurantPlan,
 } from "../https";
 import {
   MdLocationOn,
@@ -57,6 +58,17 @@ const PlatformAdmin = () => {
       queryClient.invalidateQueries({ queryKey: ["platform-stats"] });
       setStatusDialog(null);
       enqueueSnackbar("Restaurant status updated", { variant: "success" });
+    },
+    onError: (error) =>
+      enqueueSnackbar(getErrorMessage(error), { variant: "error" }),
+  });
+
+  const planMutation = useMutation({
+    mutationFn: updateRestaurantPlan,
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["platform-restaurants"] });
+      queryClient.invalidateQueries({ queryKey: ["platform-restaurant"] });
+      enqueueSnackbar(`Plan updated to ${variables.plan}`, { variant: "success" });
     },
     onError: (error) =>
       enqueueSnackbar(getErrorMessage(error), { variant: "error" }),
@@ -252,6 +264,36 @@ const PlatformAdmin = () => {
                     >
                       {restaurant.status}
                     </span>
+                  </div>
+
+                  {/* Plan badge + inline plan selector for super admin */}
+                  <div
+                    className="mt-3 flex items-center justify-between rounded-lg bg-[#1f1f1f] px-4 py-3"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-[#777]">Subscription Plan</p>
+                      <p className="mt-0.5 font-bold text-sm" style={{
+                        color: restaurant.plan === "PROFESSIONAL" ? "#02ca3a"
+                             : restaurant.plan === "ENTERPRISE" ? "#f59e0b"
+                             : "#6b7280"
+                      }}>
+                        {restaurant.plan || "STARTER"}
+                      </p>
+                    </div>
+                    <select
+                      value={restaurant.plan || "STARTER"}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        planMutation.mutate({ restaurantId: restaurant.id, plan: e.target.value });
+                      }}
+                      className="rounded-lg border border-[#383838] bg-[#262626] px-3 py-2 text-xs text-white outline-none cursor-pointer hover:border-[#555] transition"
+                      aria-label={`Change plan for ${restaurant.name}`}
+                    >
+                      <option value="STARTER">Starter (Free)</option>
+                      <option value="PROFESSIONAL">Professional (₹2,499/mo)</option>
+                      <option value="ENTERPRISE">Enterprise</option>
+                    </select>
                   </div>
 
                   <div className="mt-5 rounded-lg bg-[#1f1f1f] p-4">

@@ -4,6 +4,7 @@ const controller = require("../controllers/menuController");
 const { requireTenant } = require("../middlewares/requireTenant");
 const { requireRole } = require("../middlewares/requireRole");
 const { validate } = require("../middlewares/validate");
+const { checkPlanLimit } = require("../middlewares/checkPlanLimit");
 
 const router = express.Router();
 const managers = requireRole("OWNER", "MANAGER");
@@ -50,7 +51,7 @@ router.get("/", controller.getMenu);
 router.post("/category", managers, validate(category), controller.addCategory);
 router.put("/category/:id", managers, validate(category.partial()), controller.updateCategory);
 router.delete("/category/:id", managers, controller.deleteCategory);
-router.post("/item", managers, validate(menuItemCreate), controller.addMenuItem);
+router.post("/item", managers, checkPlanLimit("menu_items"), validate(menuItemCreate), controller.addMenuItem);
 router.put("/item/:id", managers, validate(menuItemBase.partial()), controller.updateMenuItem);
 router.patch(
   "/item/:id/toggle",

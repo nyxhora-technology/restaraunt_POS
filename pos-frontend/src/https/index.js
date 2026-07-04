@@ -89,6 +89,7 @@ export const addOrder = (data) => axiosWrapper.post("/api/order/", data);
 export const getOrders = (params) => axiosWrapper.get("/api/order", { params });
 export const getKitchenOrders = () => axiosWrapper.get("/api/order/kitchen");
 export const getDashboard = () => axiosWrapper.get("/api/order/dashboard");
+export const getOrderUsage = () => axiosWrapper.get("/api/order/usage");
 export const updateOrderStatus = ({ orderId, orderStatus }) =>
   axiosWrapper.put(`/api/order/${orderId}/status`, { orderStatus });
 export const updateOrderItems = ({ orderId, items }) =>

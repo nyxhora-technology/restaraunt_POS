@@ -58,7 +58,11 @@ export default function Auth() {
             {isRegister ? "Already use Restro?" : "Setting up a new restaurant?"}
             <button onClick={() => switchMode(!isRegister)}>{isRegister ? "Sign in" : "Create an account"}</button>
           </p>
-          <p className="auth-legal">By continuing, you agree to Restro&apos;s Terms and Privacy Policy.</p>
+          <p className="auth-legal">
+            By continuing, you agree to Restro&apos;s{" "}
+            <Link to="/terms">Terms of Service</Link> and{" "}
+            <Link to="/privacy">Privacy Policy</Link>.
+          </p>
         </div>
       </section>
     </main>

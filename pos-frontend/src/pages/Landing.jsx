@@ -216,7 +216,7 @@ export default function Landing() {
       <footer className="marketing-footer">
         <div className="marketing-brand"><img src={logo} alt="" /><span>Restro</span></div>
         <p>Restaurant operations, in one place.</p>
-        <div><Link to="/auth">Sign in</Link><Link to="/auth?tab=register">Get started</Link></div>
+        <div><Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link><Link to="/auth">Sign in</Link></div>
         <small>© {new Date().getFullYear()} Restro. Built for better service.</small>
       </footer>
     </main>

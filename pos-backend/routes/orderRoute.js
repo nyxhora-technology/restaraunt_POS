@@ -4,6 +4,7 @@ const controller = require("../controllers/orderController");
 const { requireTenant } = require("../middlewares/requireTenant");
 const { requireRole } = require("../middlewares/requireRole");
 const { validate } = require("../middlewares/validate");
+const { checkPlanLimit } = require("../middlewares/checkPlanLimit");
 
 const router = express.Router();
 const status = z.enum([
@@ -49,9 +50,15 @@ router.get(
   requireRole("OWNER", "MANAGER"),
   controller.getDashboard,
 );
+router.get(
+  "/usage",
+  requireRole("OWNER", "MANAGER"),
+  controller.getOrderUsage,
+);
 router.post(
   "/",
   requireRole("OWNER", "MANAGER", "CASHIER", "WAITER"),
+  checkPlanLimit("orders_per_month"),
   validate(
     z.object({
       orderType: z.enum(["DINE_IN", "TAKEAWAY"]).default("DINE_IN"),
