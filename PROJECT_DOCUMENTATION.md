@@ -33,7 +33,7 @@ The Restaurant POS System is a **multi-tenant SaaS** platform. A single deployme
 |--------|-------------|
 | **Point of Sale** | Cart-based order creation with variant support |
 | **Table Management** | Visual table map with occupancy status |
-| **Kitchen Display** | Live order queue for kitchen staff |
+| **Kitchen Display** | Live order queue for kitchen staff |        
 | **Order Management** | Full lifecycle tracking with real-time updates |
 | **Inventory** | Auto-deduction on serve, restock, low-stock alerts |
 | **QR Menu** | Public digital menu via unique restaurant slug |

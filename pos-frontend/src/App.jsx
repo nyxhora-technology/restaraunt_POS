@@ -32,6 +32,8 @@ const Settings      = lazy(() => import("./pages/Settings"));
 const QrMenu        = lazy(() => import("./pages/QrMenu"));
 const More          = lazy(() => import("./pages/More"));
 const Inventory     = lazy(() => import("./pages/Inventory"));
+const Landing       = lazy(() => import("./pages/Landing"));
+const AuthCallback  = lazy(() => import("./pages/AuthCallback"));
 
 // ── Role sets used in route guards ─────────────────────────────────────────
 // Kept here so changes to access rules are one-liners in this file.
@@ -69,6 +71,7 @@ function Layout() {
               : <Auth />
           }
         />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
         {/* ── Platform (SUPER_ADMIN only) ─────────────────────────────── */}
         <Route
@@ -98,9 +101,11 @@ function Layout() {
         <Route
           path="/"
           element={
-            <RoleRoute allowedRoles={MANAGEMENT} redirectTo="/dashboard">
-              <Home />
-            </RoleRoute>
+            user.isAuth ? (
+              <RoleRoute allowedRoles={MANAGEMENT} redirectTo="/dashboard">
+                <Home />
+              </RoleRoute>
+            ) : <Landing />
           }
         />
 

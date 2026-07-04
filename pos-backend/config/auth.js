@@ -3,11 +3,22 @@ const { prismaAdapter } = require("better-auth/adapters/prisma");
 const prisma = require("./prisma");
 const config = require("./config");
 
+const socialProviders =
+  config.googleClientId && config.googleClientSecret
+    ? {
+        google: {
+          clientId: config.googleClientId,
+          clientSecret: config.googleClientSecret,
+        },
+      }
+    : undefined;
+
 const auth = betterAuth({
   appName: "Restaurant POS",
   baseURL: config.backendUrl,
   secret: config.betterAuthSecret,
   trustedOrigins: [config.frontendUrl],
+  socialProviders,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),

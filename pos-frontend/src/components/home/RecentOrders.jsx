@@ -11,6 +11,7 @@ import {
   MdVisibility,
 } from "react-icons/md";
 import OrderDetailsModal from "../orders/OrderDetailsModal";
+import OrderCelebration from "../shared/OrderCelebration";
 import { getOrders } from "../../https/index";
 import { getOrderTableLabel } from "../tables/tableOptions";
 
@@ -38,6 +39,9 @@ const RecentOrders = ({ search = "" }) => {
   const [sortBy, setSortBy] = useState("time");
   const [openMenuId, setOpenMenuId] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [completedOrder, setCompletedOrder] = useState(null);
+  const previousOrdersRef = React.useRef({});
+
   const {
     data: resData,
     isError,
@@ -82,6 +86,25 @@ const RecentOrders = ({ search = "" }) => {
         new Date(right.createdAt || 0).getTime();
       return sortDirection === "asc" ? difference : -difference;
     });
+
+  // Peak-End Rule: Detect when an order is completed to fire the celebration
+  useEffect(() => {
+    if (!orders || orders.length === 0) return;
+
+    const newOrderState = {};
+    orders.forEach((order) => {
+      newOrderState[order.id] = order.orderStatus;
+      const oldStatus = previousOrdersRef.current[order.id];
+      if (
+        oldStatus &&
+        oldStatus !== "COMPLETED" &&
+        order.orderStatus === "COMPLETED"
+      ) {
+        setCompletedOrder(order.orderNo || order.id);
+      }
+    });
+    previousOrdersRef.current = newOrderState;
+  }, [orders]);
 
   useEffect(() => {
     if (!openMenuId) return undefined;
@@ -316,6 +339,14 @@ const RecentOrders = ({ search = "" }) => {
         <OrderDetailsModal
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
+          orderId={selectedOrder.id}
+        />
+      )}
+
+      {completedOrder && (
+        <OrderCelebration
+          orderNo={completedOrder}
+          onComplete={() => setCompletedOrder(null)}
         />
       )}
     </section>

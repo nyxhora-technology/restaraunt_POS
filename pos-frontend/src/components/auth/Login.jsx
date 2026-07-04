@@ -1,101 +1,40 @@
-import React, { useState } from "react";
-import { useMutation } from "@tanstack/react-query"
-import { login } from "../../https/index"
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { useDispatch } from "react-redux";
-import { setUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
-import { getMyRestaurant, getUserData, getErrorMessage } from "../../https";
-import { setRestaurant } from "../../redux/slices/userSlice";
-import { useQueryClient } from "@tanstack/react-query";
+import { login, getMyRestaurant, getUserData, getErrorMessage } from "../../https";
+import { setRestaurant, setUser } from "../../redux/slices/userSlice";
 import { ROLES } from "../../constants/roles";
 import { getHomeRoute } from "../shared/RouteGuards";
- 
-const Login = () => {
-    const navigate = useNavigate();
-    const dispatch = useDispatch();
-    const queryClient = useQueryClient();
-    const[formData, setFormData] = useState({
-      email: "",
-      password: "",
-    });
-  
-    const handleChange = (e) => {
-      setFormData({...formData, [e.target.name]: e.target.value});
-    }
 
-  
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      loginMutation.mutate(formData);
-    }
+export default function Login() {
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const queryClient = useQueryClient();
 
-    const loginMutation = useMutation({
-      mutationFn: (reqData) => login(reqData),
-      onSuccess: async () => {
-          queryClient.clear();
-          const { data } = await getUserData();
-          const user = data.data;
-          dispatch(setUser(user));
-          if (user.role === ROLES.SUPER_ADMIN) {
-            navigate("/platform");
-            return;
-          }
-          const restaurantResponse = await getMyRestaurant();
-          const restaurant = restaurantResponse.data.data;
-          dispatch(setRestaurant(restaurant));
-          navigate(getHomeRoute({ ...user, restaurant }), { replace: true });
-      },
-      onError: (error) => {
-        enqueueSnackbar(getErrorMessage(error, "Sign in failed"), { variant: "error" });
-      }
-    })
+  const mutation = useMutation({
+    mutationFn: login,
+    onSuccess: async () => {
+      queryClient.clear();
+      const { data } = await getUserData();
+      const user = data.data;
+      dispatch(setUser(user));
+      if (user.role === ROLES.SUPER_ADMIN) return navigate("/platform", { replace: true });
+      const restaurantResponse = await getMyRestaurant();
+      const restaurant = restaurantResponse.data.data;
+      dispatch(setRestaurant(restaurant));
+      navigate(getHomeRoute({ ...user, restaurant }), { replace: true });
+    },
+    onError: (error) => enqueueSnackbar(getErrorMessage(error, "Sign in failed"), { variant: "error" }),
+  });
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
-            Employee Email
-          </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter employee email"
-              className="bg-transparent flex-1 text-white focus:outline-none"
-              required
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
-            Password
-          </label>
-          <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter password"
-              className="bg-transparent flex-1 text-white focus:outline-none"
-              required
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          className="w-full rounded-lg mt-6 py-3 text-lg bg-yellow-400 text-gray-900 font-bold"
-        >
-          Sign in
-        </button>
-      </form>
-    </div>
+    <form className="auth-form" onSubmit={(event) => { event.preventDefault(); mutation.mutate(formData); }}>
+      <label>Work email<input type="email" name="email" autoComplete="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} placeholder="you@restaurant.com" required /></label>
+      <label>Password<input type="password" name="password" autoComplete="current-password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} placeholder="Enter your password" required /></label>
+      <button className="auth-submit" type="submit" disabled={mutation.isPending}>{mutation.isPending ? "Signing in…" : "Sign in securely"}</button>
+    </form>
   );
-};
-
-export default Login;
+}

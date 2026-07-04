@@ -10,6 +10,8 @@ const config = Object.freeze({
   backendUrl: process.env.BETTER_AUTH_URL || `http://localhost:${port}`,
   betterAuthSecret:
     process.env.BETTER_AUTH_SECRET || process.env.JWT_SECRET || "development-only-change-me",
+  googleClientId: process.env.GOOGLE_CLIENT_ID?.trim(),
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim(),
   razorpayKeyId: process.env.RAZORPAY_KEY_ID,
   razorpaySecretKey: process.env.RAZORPAY_KEY_SECRET,
   razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET,
@@ -22,6 +24,12 @@ const config = Object.freeze({
 
 if (nodeEnv === "production" && config.betterAuthSecret === "development-only-change-me") {
   throw new Error("BETTER_AUTH_SECRET is required in production");
+}
+
+if (Boolean(config.googleClientId) !== Boolean(config.googleClientSecret)) {
+  throw new Error(
+    "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together",
+  );
 }
 
 module.exports = config;

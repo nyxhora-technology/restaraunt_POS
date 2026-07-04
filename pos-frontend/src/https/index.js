@@ -11,6 +11,17 @@ export const register = ({ name, email, password, phone }) =>
     phone,
   });
 export const getSession = () => axiosWrapper.get("/api/auth/get-session");
+export const signInWithGoogle = async () => {
+  const callbackURL = `${window.location.origin}/auth/callback`;
+  const { data } = await axiosWrapper.post("/api/auth/sign-in/social", {
+    provider: "google",
+    callbackURL,
+    errorCallbackURL: `${window.location.origin}/auth?tab=register&oauth=error`,
+  });
+
+  if (!data?.url) throw new Error("Google sign-up could not be started");
+  window.location.assign(data.url);
+};
 export const getUserData = () => axiosWrapper.get("/api/restaurant/context");
 export const logout = () => axiosWrapper.post("/api/auth/sign-out");
 export const changePassword = (data) =>

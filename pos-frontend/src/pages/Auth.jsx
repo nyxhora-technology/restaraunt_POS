@@ -1,63 +1,66 @@
-import React, { useEffect, useState } from "react";
-import restaurant from "../assets/images/restro_image.png"
-import logo from "../assets/images/logo.png"
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { HiArrowLeft, HiCheckCircle } from "react-icons/hi";
+import restaurant from "../assets/images/restro_image.png";
+import logo from "../assets/images/logo.png";
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
 
-const Auth = () => {
+export default function Auth() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [isRegister, setIsRegister] = useState(searchParams.get("tab") === "register");
 
   useEffect(() => {
-    document.title = "POS | Auth"
-  }, [])
+    const registering = searchParams.get("tab") === "register";
+    setIsRegister(registering);
+    document.title = registering ? "Create your Restro account" : "Sign in to Restro";
+  }, [searchParams]);
 
-  const [isRegister, setIsRegister] = useState(false);
+  const switchMode = (registering) => {
+    setIsRegister(registering);
+    setSearchParams(registering ? { tab: "register" } : {}, { replace: true });
+  };
 
   return (
-    <div className="flex min-h-screen w-full">
-      {/* Left Section */}
-      <div className="w-1/2 relative flex items-center justify-center bg-cover">
-        {/* BG Image */}
-        <img className="w-full h-full object-cover" src={restaurant} alt="Restaurant Image" />
-
-        {/* Black Overlay */}
-        <div className="absolute inset-0 bg-black bg-opacity-30"></div>
-
-        {/* Quote at bottom */}
-        <blockquote className="absolute bottom-10 px-8 mb-10 text-2xl italic text-white">
-          &ldquo;Made for restaurants that care about every order.&rdquo;
-          <br />
-          <span className="block mt-4 text-yellow-400">- Founder of Restro</span>
-        </blockquote>
-      </div>
-
-      {/* Right Section */}
-      <div className="w-1/2 min-h-screen bg-[#1a1a1a] p-10">
-        <div className="flex flex-col items-center gap-2">
-          <img src={logo} alt="Restro Logo" className="h-14 w-14 border-2 rounded-full p-1" />
-          <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide">Restro</h1>
+    <main className="auth-page">
+      <section className="auth-visual">
+        <img src={restaurant} alt="A busy modern restaurant dining room" />
+        <div className="auth-visual-overlay" />
+        <Link to="/" className="auth-back"><HiArrowLeft /> Back to Restro</Link>
+        <div className="auth-visual-copy">
+          <span>Restaurant operations, refined.</span>
+          <h1>Keep every part of service in sync.</h1>
+          <div>
+            <p><HiCheckCircle /> Live order and kitchen workflows</p>
+            <p><HiCheckCircle /> Tables, payments, staff, and stock</p>
+            <p><HiCheckCircle /> One clear view for every role</p>
+          </div>
         </div>
+      </section>
 
-        <h2 className="text-4xl text-center mt-10 font-semibold text-yellow-400 mb-10">
-          {isRegister ? "Restaurant Registration" : "Employee Login"}
-        </h2>
-
-        {/* Components */}  
-        {isRegister ? <Register setIsRegister={setIsRegister} /> : <Login />}
-
-
-        <div className="flex justify-center mt-6">
-          <p className="text-sm text-[#ababab]">
-            {isRegister ? "Already have an account?" : "Don't have an account?"}
-            <a onClick={() => setIsRegister(!isRegister)} className="text-yellow-400 font-semibold hover:underline" href="#">
-              {isRegister ? "Sign in" : "Sign up"}
-            </a>
+      <section className="auth-panel">
+        <div className="auth-card">
+          <Link className="auth-brand" to="/"><img src={logo} alt="" /><strong>Restro</strong></Link>
+          <div className="auth-tabs" role="tablist" aria-label="Account access">
+            <button className={!isRegister ? "is-active" : ""} onClick={() => switchMode(false)}>Sign in</button>
+            <button className={isRegister ? "is-active" : ""} onClick={() => switchMode(true)}>Create account</button>
+          </div>
+          <header>
+            <span>{isRegister ? "Start your journey" : "Welcome back"}</span>
+            <h2>{isRegister ? "Create your restaurant account" : "Sign in to your workspace"}</h2>
+            <p>{isRegister ? "For restaurant owners setting up a new workspace." : "Owners and team members can sign in with their work email."}</p>
+          </header>
+          {searchParams.get("oauth") === "error" && (
+            <div className="auth-error" role="alert">Google sign-up was cancelled or could not be completed.</div>
+          )}
+          {isRegister ? <Register /> : <Login />}
+          <p className="auth-switch">
+            {isRegister ? "Already use Restro?" : "Setting up a new restaurant?"}
+            <button onClick={() => switchMode(!isRegister)}>{isRegister ? "Sign in" : "Create an account"}</button>
           </p>
+          <p className="auth-legal">By continuing, you agree to Restro&apos;s Terms and Privacy Policy.</p>
         </div>
-
-
-      </div>
-    </div>
+      </section>
+    </main>
   );
-};
-
-export default Auth;
+}

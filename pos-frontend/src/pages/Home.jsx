@@ -24,6 +24,7 @@ import GlobalSearch from "../components/home/GlobalSearch";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import PopularDishes from "../components/home/PopularDishes";
+import SetupChecklist from "../components/home/SetupChecklist";
 import useDashboardPreferences from "../hooks/useDashboardPreferences";
 import useCurrency from "../hooks/useCurrency";
 import { getDashboard } from "../https";
@@ -229,44 +230,45 @@ const Home = () => {
               </div>
             )}
 
+            {/* Zeigarnik setup checklist — shown until owner completes all steps */}
+            {user.role === "OWNER" && <SetupChecklist />}
+
             <section className="dashboard-metric-grid">
               <MiniCard
                 title="Total Earnings"
                 icon={<MdOutlineReceiptLong />}
                 prefix={currency.symbol}
-                number={
-                  isLoading ? "—" : currency.format(dashboard.revenueToday || 0)
-                }
+                number={currency.format(dashboard.revenueToday || 0)}
                 trend={isLoading ? undefined : revenueDelta}
                 footer="vs yesterday"
                 tone="teal"
+                isLoading={isLoading}
               />
               <MiniCard
                 title="In Progress"
                 icon={<MdOutlineAccessTime />}
-                number={isLoading ? "—" : inProgress}
+                number={inProgress}
                 footer={`${dashboard.ready || 0} ready for service`}
                 tone="orange"
+                isLoading={isLoading}
               />
               <MiniCard
                 title="Today's Orders"
                 icon={<MdOutlineShoppingBag />}
-                number={isLoading ? "—" : dashboard.ordersToday || 0}
+                number={dashboard.ordersToday || 0}
                 trend={isLoading ? undefined : ordersDelta}
                 footer="vs yesterday"
                 tone="blue"
+                isLoading={isLoading}
               />
               <MiniCard
                 title="Average Order Value"
                 icon={<MdOutlineLocalOffer />}
                 prefix={currency.symbol}
-                number={
-                  isLoading
-                    ? "—"
-                    : currency.format(dashboard.averageOrderValue || 0)
-                }
+                number={currency.format(dashboard.averageOrderValue || 0)}
                 footer="based on today's payments"
                 tone="red"
+                isLoading={isLoading}
               />
             </section>
 

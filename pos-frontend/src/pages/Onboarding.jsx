@@ -1,24 +1,77 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
-import { getErrorMessage, getMyRestaurant, registerRestaurant } from "../https";
-import { setRestaurant, setUser } from "../redux/slices/userSlice";
+import { getErrorMessage, getMyRestaurant, getUserData, registerRestaurant, logout } from "../https";
+import { removeUser, setRestaurant, setUser } from "../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/images/logo.png";
+import {
+  HiOutlineOfficeBuilding,
+  HiOutlineLocationMarker,
+  HiOutlinePhone,
+  HiOutlineMail,
+  HiOutlineCurrencyDollar,
+  HiOutlineDocumentText,
+  HiArrowRight,
+  HiArrowLeft,
+  HiCheckCircle,
+  HiClock,
+  HiX,
+  HiOutlineRefresh,
+} from "react-icons/hi";
 
-const fields = [
-  ["name", "Restaurant Name"],
-  ["address", "Address"],
-  ["city", "City"],
-  ["phone", "Restaurant Phone"],
-  ["email", "Restaurant Email"],
+const STEPS = [
+  { id: "basics",   label: "Restaurant Info", icon: HiOutlineOfficeBuilding },
+  { id: "contact",  label: "Contact",          icon: HiOutlinePhone },
+  { id: "details",  label: "Details",          icon: HiOutlineDocumentText },
 ];
 
-const Onboarding = () => {
+const CURRENCIES = [
+  { value: "INR", label: "₹ INR — India" },
+  { value: "USD", label: "$ USD — United States" },
+  { value: "EUR", label: "€ EUR — Europe" },
+  { value: "GBP", label: "£ GBP — United Kingdom" },
+  { value: "AUD", label: "$ AUD — Australia" },
+];
+
+const STATUS_CONFIG = {
+  PENDING: {
+    icon: HiClock,
+    color: "#f6b100",
+    bg: "rgba(246,177,0,.1)",
+    border: "rgba(246,177,0,.25)",
+    title: "Application under review",
+    message: "We've received your restaurant details and they're being reviewed by our team. This usually takes less than 24 hours.",
+    next: "You'll be able to access your workspace once approved.",
+  },
+  REJECTED: {
+    icon: HiX,
+    color: "#ef4444",
+    bg: "rgba(239,68,68,.08)",
+    border: "rgba(239,68,68,.2)",
+    title: "Application not approved",
+    message: null, // dynamic
+    next: "You can edit your details and resubmit below.",
+  },
+  SUSPENDED: {
+    icon: HiX,
+    color: "#ef4444",
+    bg: "rgba(239,68,68,.08)",
+    border: "rgba(239,68,68,.2)",
+    title: "Account suspended",
+    message: "This restaurant account has been suspended. Please contact our support team for assistance.",
+    next: null,
+  },
+};
+
+export default function Onboarding() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const user = useSelector((state) => state.user);
-  const { email, restaurant } = user;
+  const user = useSelector((s) => s.user);
+  const { email, name: userName, restaurant } = user;
+
+  const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -28,23 +81,27 @@ const Onboarding = () => {
     description: "",
     currency: "INR",
   });
+  const [resubmit, setResubmit] = useState(false);
 
+  useEffect(() => { document.title = "Restro | Restaurant Setup"; }, []);
+
+  // If approved, bounce to dashboard
   useEffect(() => {
-    document.title = "POS | Restaurant Setup";
-  }, []);
-  useEffect(() => {
-    if (restaurant?.status === "APPROVED") navigate("/");
+    if (restaurant?.status === "APPROVED") navigate("/", { replace: true });
   }, [navigate, restaurant?.status]);
+
+  // Poll status every 15 s while pending
   const statusQuery = useQuery({
     queryKey: ["my-restaurant-status"],
     queryFn: getMyRestaurant,
-    enabled: Boolean(restaurant),
+    enabled: Boolean(restaurant && restaurant.status === "PENDING"),
+    refetchInterval: 15_000,
   });
   useEffect(() => {
     const latest = statusQuery.data?.data.data;
     if (!latest) return;
     dispatch(setRestaurant(latest));
-    if (latest.status === "APPROVED") navigate("/");
+    if (latest.status === "APPROVED") navigate("/", { replace: true });
   }, [dispatch, navigate, statusQuery.data]);
 
   const mutation = useMutation({
@@ -52,109 +109,249 @@ const Onboarding = () => {
     onSuccess: ({ data }) => {
       dispatch(setRestaurant(data.data));
       dispatch(setUser({ ...user, role: "OWNER", restaurantId: data.data.id }));
-      enqueueSnackbar(data.message, { variant: "success" });
+      enqueueSnackbar("Restaurant submitted for approval!", { variant: "success" });
+      setResubmit(false);
     },
     onError: (error) =>
-      enqueueSnackbar(getErrorMessage(error, "Restaurant registration failed"), {
-        variant: "error",
-      }),
+      enqueueSnackbar(getErrorMessage(error, "Registration failed"), { variant: "error" }),
   });
 
-  if (restaurant) {
-    const statusText = {
-      PENDING: "Your restaurant application is waiting for platform approval.",
-      REJECTED: restaurant.rejectionReason
-        ? `Application rejected: ${restaurant.rejectionReason}`
-        : "Your restaurant application was rejected.",
-      SUSPENDED: "This restaurant is suspended. Contact the platform administrator.",
-    };
+  const handleLogout = async () => {
+    try { await logout(); } catch { /* ignore */ }
+    dispatch(removeUser());
+    navigate("/", { replace: true });
+  };
+
+  const update = (field, value) =>
+    setFormData((prev) => ({ ...prev, [field]: value }));
+
+  const canProceed = () => {
+    if (step === 0) return formData.name.trim().length >= 2;
+    if (step === 1) return formData.phone.trim() && formData.email.trim() && formData.city.trim() && formData.address.trim();
+    return true;
+  };
+
+  // ── Status screen (restaurant already registered but not approved) ──────────
+  if (restaurant && !resubmit) {
+    const cfg = STATUS_CONFIG[restaurant.status];
+    const StatusIcon = cfg?.icon ?? HiClock;
+    const dynamicMessage = restaurant.status === "REJECTED"
+      ? (restaurant.rejectionReason
+          ? `Your application was not approved: ${restaurant.rejectionReason}`
+          : "Your application was not approved. Please review your details and resubmit.")
+      : cfg?.message;
+
     return (
-      <section className="dashboard-shell h-[calc(100vh-5rem)] flex items-center justify-center bg-[var(--dash-bg)]">
-        <div className="dashboard-panel p-10 rounded-xl w-[560px] text-center shadow-[var(--dash-shadow)]">
-          <h1 className="text-[var(--dash-primary-strong)] text-3xl font-semibold mb-4">{restaurant.name}</h1>
-          <p className="text-[var(--dash-muted)] text-base mb-2">
-            {statusText[restaurant.status] || `Restaurant status: ${restaurant.status}`}
-          </p>
-          <p className="text-[var(--dash-text)] text-lg font-bold">{restaurant.status}</p>
+      <main className="onboarding-shell">
+        <header className="onboarding-topbar">
+          <a className="onboarding-brand" href="/"><img src={logo} alt="" /><span>Restro</span></a>
+          <button className="onboarding-logout" onClick={handleLogout}>Sign out</button>
+        </header>
+
+        <div className="onboarding-status-card" style={{ "--status-color": cfg?.color, "--status-bg": cfg?.bg, "--status-border": cfg?.border }}>
+          <div className="onboarding-status-icon">
+            <StatusIcon />
+          </div>
+          <h1>{cfg?.title}</h1>
+          <p className="onboarding-status-name">{restaurant.name}</p>
+          <p className="onboarding-status-msg">{dynamicMessage}</p>
+          {cfg?.next && <p className="onboarding-status-next">{cfg.next}</p>}
+
+          {restaurant.status === "PENDING" && (
+            <div className="onboarding-status-polling">
+              <div className="onboarding-mini-spinner" />
+              <span>Checking for updates automatically…</span>
+            </div>
+          )}
+
+          {restaurant.status === "REJECTED" && (
+            <button className="onboarding-resubmit-btn" onClick={() => { setResubmit(true); setStep(0); }}>
+              <HiOutlineRefresh /> Edit &amp; resubmit
+            </button>
+          )}
         </div>
-      </section>
+      </main>
     );
   }
 
+  // ── Form wizard ─────────────────────────────────────────────────────────────
   return (
-      <section className="dashboard-shell min-h-[calc(100vh-5rem)] flex items-center justify-center py-10 bg-[var(--dash-bg)]">
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            mutation.mutate(formData);
-          }}
-          className="dashboard-panel p-8 rounded-xl w-[620px] shadow-[var(--dash-shadow)]"
-        >
-          <h1 className="text-[var(--dash-text)] text-3xl font-bold text-center mb-8">
-            Complete Restaurant Setup
-          </h1>
-          <div className="grid grid-cols-2 gap-5">
-            {fields.map(([name, label]) => (
-              <label key={name} className="dashboard-modal-label">
-                {label}
-                <div className="dashboard-modal-field mt-1.5">
+    <main className="onboarding-shell">
+      <header className="onboarding-topbar">
+        <a className="onboarding-brand" href="/"><img src={logo} alt="" /><span>Restro</span></a>
+        <span className="onboarding-greeting">Welcome, {userName?.split(" ")[0] || "there"} 👋</span>
+        <button className="onboarding-logout" onClick={handleLogout}>Sign out</button>
+      </header>
+
+      <div className="onboarding-layout">
+        {/* Left sidebar */}
+        <aside className="onboarding-sidebar">
+          <div>
+            <p className="onboarding-sidebar-label">Setting up</p>
+            <h2 className="onboarding-sidebar-title">Your restaurant workspace</h2>
+            <p className="onboarding-sidebar-sub">
+              Fill in your restaurant details. After you submit, our team will review and approve your workspace — usually within 24 hours.
+            </p>
+          </div>
+          <nav className="onboarding-steps-nav">
+            {STEPS.map((s, i) => {
+              const Icon = s.icon;
+              const done = i < step;
+              const active = i === step;
+              return (
+                <button
+                  key={s.id}
+                  className={`onboarding-step-item ${active ? "is-active" : ""} ${done ? "is-done" : ""}`}
+                  onClick={() => i < step && setStep(i)}
+                  disabled={i > step}
+                >
+                  <span className="onboarding-step-num">
+                    {done ? <HiCheckCircle /> : <Icon />}
+                  </span>
+                  <span>{s.label}</span>
+                </button>
+              );
+            })}
+          </nav>
+          <div className="onboarding-sidebar-trust">
+            <p><HiCheckCircle /> No hidden fees during setup</p>
+            <p><HiCheckCircle /> Your data is fully encrypted</p>
+            <p><HiCheckCircle /> Cancel or pause anytime</p>
+          </div>
+        </aside>
+
+        {/* Form card */}
+        <div className="onboarding-card">
+          <div className="onboarding-progress">
+            <div className="onboarding-progress-bar" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+          </div>
+
+          <div className="onboarding-step-header">
+            <span className="onboarding-step-badge">Step {step + 1} of {STEPS.length}</span>
+            <h2>{step === 0 ? "What's your restaurant called?" : step === 1 ? "How can customers reach you?" : "A little more about your restaurant"}</h2>
+            <p>{step === 0 ? "This will be the name shown across your workspace." : step === 1 ? "We'll use these to set up your profile and send approval updates." : "Optional details that help customise your experience."}</p>
+          </div>
+
+          <form
+            className="onboarding-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (step < STEPS.length - 1) { setStep((s) => s + 1); return; }
+              mutation.mutate(formData);
+            }}
+          >
+            {step === 0 && (
+              <div className="onboarding-fields">
+                <label className="onboarding-field">
+                  <span><HiOutlineOfficeBuilding /> Restaurant Name</span>
                   <input
-                    name={name}
-                    value={formData[name]}
-                    onChange={(event) =>
-                      setFormData((current) => ({ ...current, [name]: event.target.value }))
-                    }
-                    type={name === "email" ? "email" : "text"}
-                    className="dashboard-modal-input w-full"
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => update("name", e.target.value)}
+                    placeholder="e.g. The Spice Garden"
+                    autoFocus
+                    required
+                    minLength={2}
+                  />
+                </label>
+              </div>
+            )}
+
+            {step === 1 && (
+              <div className="onboarding-fields">
+                <label className="onboarding-field">
+                  <span><HiOutlineLocationMarker /> Street Address</span>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => update("address", e.target.value)}
+                    placeholder="e.g. 42 MG Road"
+                    autoFocus
                     required
                   />
-                </div>
-              </label>
-            ))}
-            <label className="dashboard-modal-label">
-              Currency
-              <div className="dashboard-modal-field mt-1.5">
-                <select
-                  name="currency"
-                  value={formData.currency}
-                  onChange={(event) =>
-                    setFormData((current) => ({ ...current, currency: event.target.value }))
-                  }
-                  className="bg-transparent text-[var(--dash-text)] outline-none border-none w-full cursor-pointer"
-                  required
-                >
-                  <option value="INR">₹ (INR) - India</option>
-                  <option value="USD">$ (USD) - United States</option>
-                  <option value="EUR">€ (EUR) - Europe</option>
-                  <option value="GBP">£ (GBP) - United Kingdom</option>
-                  <option value="AUD">$ (AUD) - Australia</option>
-                </select>
+                </label>
+                <label className="onboarding-field">
+                  <span><HiOutlineLocationMarker /> City</span>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => update("city", e.target.value)}
+                    placeholder="e.g. Bengaluru"
+                    required
+                  />
+                </label>
+                <label className="onboarding-field">
+                  <span><HiOutlinePhone /> Restaurant Phone</span>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => update("phone", e.target.value)}
+                    placeholder="e.g. +91 98765 43210"
+                    required
+                  />
+                </label>
+                <label className="onboarding-field">
+                  <span><HiOutlineMail /> Restaurant Email</span>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => update("email", e.target.value)}
+                    placeholder="e.g. hello@spicegarden.com"
+                    required
+                  />
+                </label>
               </div>
-            </label>
-          </div>
-          <label className="dashboard-modal-label mt-5 block">
-            Description
-            <div className="dashboard-modal-field mt-1.5 h-auto items-start py-2">
-              <textarea
-                value={formData.description}
-                onChange={(event) =>
-                  setFormData((current) => ({ ...current, description: event.target.value }))
-                }
-                className="dashboard-modal-input w-full min-h-[80px] resize-y"
-                rows="3"
-              />
-            </div>
-          </label>
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="dashboard-primary-button w-full mt-8 py-3.5 text-[15px]"
-          >
-            {mutation.isPending ? "Submitting..." : "Submit for Approval"}
-          </button>
-        </form>
-      </section>
-  );
-};
+            )}
 
-export default Onboarding;
+            {step === 2 && (
+              <div className="onboarding-fields">
+                <label className="onboarding-field">
+                  <span><HiOutlineCurrencyDollar /> Currency</span>
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => update("currency", e.target.value)}
+                    className="onboarding-select"
+                    required
+                  >
+                    {CURRENCIES.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="onboarding-field">
+                  <span><HiOutlineDocumentText /> Short Description <em>(optional)</em></span>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => update("description", e.target.value)}
+                    placeholder="A few words about your restaurant — cuisine, vibe, speciality…"
+                    rows={4}
+                  />
+                </label>
+              </div>
+            )}
+
+            <div className="onboarding-actions">
+              {step > 0 && (
+                <button type="button" className="onboarding-back" onClick={() => setStep((s) => s - 1)}>
+                  <HiArrowLeft /> Back
+                </button>
+              )}
+              <button
+                type="submit"
+                className="onboarding-next"
+                disabled={!canProceed() || mutation.isPending}
+              >
+                {mutation.isPending
+                  ? "Submitting…"
+                  : step < STEPS.length - 1
+                    ? <><span>Continue</span> <HiArrowRight /></>
+                    : <><span>Submit for approval</span> <HiArrowRight /></>
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  );
+}
