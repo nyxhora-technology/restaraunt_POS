@@ -9,7 +9,8 @@ const initialState = {
     restaurantId: null,
     restaurant: null,
     mustChangePassword: false,
-    isAuth: false
+    isAuth: false,
+    isInitializing: true,   // true until the very first session check completes
 }
 
 const userSlice = createSlice({
@@ -42,9 +43,13 @@ const userSlice = createSlice({
             state.restaurant = null;
             state.mustChangePassword = false;
             state.isAuth = false;
-        }
+            state.isInitializing = false;  // session confirmed: user is not logged in
+        },
+        setInitialized: (state) => {
+            state.isInitializing = false;
+        },
     }
 })
 
-export const { setUser, setRestaurant, removeUser } = userSlice.actions;
+export const { setUser, setRestaurant, removeUser, setInitialized } = userSlice.actions;
 export default userSlice.reducer;

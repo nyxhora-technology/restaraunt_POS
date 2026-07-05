@@ -22,9 +22,12 @@ export const getHomeRoute = (user) => {
 
 /**
  * Redirects unauthenticated users to /auth.
+ * Returns null while the session check is still in-flight so the router
+ * never makes a routing decision before auth state is known.
  */
 export function ProtectedRoute({ children }) {
-  const { isAuth } = useSelector((state) => state.user);
+  const { isAuth, isInitializing } = useSelector((state) => state.user);
+  if (isInitializing) return null;  // wait — don't redirect yet
   if (!isAuth) return <Navigate to="/auth" replace />;
   return children;
 }
@@ -41,6 +44,7 @@ export function ProtectedRoute({ children }) {
 export function TenantRoute({ children }) {
   const user = useSelector((state) => state.user);
 
+  if (user.isInitializing) return null;  // wait — don't redirect yet
   if (!user.isAuth) return <Navigate to="/auth" replace />;
   if (user.role === ROLES.SUPER_ADMIN) return <Navigate to="/platform" replace />;
   if (!user.restaurant || user.restaurant.status !== "APPROVED")

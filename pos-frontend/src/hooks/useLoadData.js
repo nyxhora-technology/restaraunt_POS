@@ -1,17 +1,21 @@
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { getMyRestaurant, getUserData } from "../https";
-import { useEffect, useState } from "react";
-import { removeUser, setRestaurant, setUser } from "../redux/slices/userSlice";
+import { useEffect } from "react";
+import { removeUser, setRestaurant, setUser, setInitialized } from "../redux/slices/userSlice";
 
 const useLoadData = () => {
   const dispatch = useDispatch();
-  const [isLoading, setIsLoading] = useState(true);
+  const isInitializing = useSelector((state) => state.user.isInitializing);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const contextResponse = await getUserData();
         const user = contextResponse.data.data;
+        // Dispatch setUser FIRST — then setInitialized in finally.
+        // This guarantees isAuth=true is committed to the store before
+        // isInitializing becomes false, so the router never sees
+        // isInitializing=false + isAuth=false at the same time.
         dispatch(setUser(user));
 
         if (user.role !== "SUPER_ADMIN") {
@@ -19,16 +23,20 @@ const useLoadData = () => {
           dispatch(setRestaurant(restaurantResponse.data.data));
         }
       } catch {
+        // Session invalid or expired — user is not logged in
         dispatch(removeUser());
       } finally {
-        setIsLoading(false);
+        // Release the initializing lock AFTER all dispatches are queued.
+        // React batches synchronous dispatches so by the time the router
+        // re-renders, both setUser and setInitialized effects are applied.
+        dispatch(setInitialized());
       }
     };
 
     fetchUser();
   }, [dispatch]);
 
-  return isLoading;
+  return isInitializing;
 };
 
 export default useLoadData;

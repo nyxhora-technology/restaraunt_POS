@@ -50,6 +50,10 @@ function Layout() {
   useRealtimeSync();
   const user = useSelector((state) => state.user);
 
+  // isLoading mirrors user.isInitializing — show full-screen skeleton
+  // until the session check (getUserData + getMyRestaurant) completes.
+  // Without this guard every route sees isAuth=false on the first render
+  // cycle and flashes the wrong page before auth resolves.
   if (isLoading) return <FullScreenLoader />;
 
   // Hard-block: staff must set their own password before using the app
@@ -105,7 +109,10 @@ function Layout() {
         <Route
           path="/"
           element={
-            user.isAuth ? (
+            // isInitializing: session check in-flight — render nothing,
+            // the FullScreenLoader above already covers the screen.
+            user.isInitializing ? null
+            : user.isAuth ? (
               <RoleRoute allowedRoles={MANAGEMENT} redirectTo="/dashboard">
                 <Home />
               </RoleRoute>
