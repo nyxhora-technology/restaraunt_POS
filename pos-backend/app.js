@@ -32,7 +32,8 @@ app.use(
         objectSrc:   ["'none'"],
         baseUri:     ["'self'"],
         formAction:  ["'self'"],
-        upgradeInsecureRequests: config.nodeEnv === "production" ? [] : undefined,
+        // Only force HTTPS upgrade in production — dev runs on plain HTTP
+        ...(config.nodeEnv === "production" && { upgradeInsecureRequests: [] }),
       },
     },
     // Razorpay checkout uses cross-origin iframes
@@ -158,6 +159,23 @@ const start = async () => {
 if (require.main === module) {
   start().catch((error) => {
     console.error("Server startup failed:", error);
+    process.exit(1);
+  });
+
+  // ── Process-level crash guards ─────────────────────────────────────────
+  // Without these, an unhandled promise rejection silently kills the server
+  // in production. PM2 / Docker will restart, but we want a clear log first.
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("[unhandledRejection]", reason, "at promise:", promise);
+    // Do NOT exit — let it be handled by the next request cycle.
+    // If it's truly fatal, the server will 500 on the next request
+    // and the global error handler will log it with a requestId.
+  });
+
+  process.on("uncaughtException", (error) => {
+    console.error("[uncaughtException]", error);
+    // For true uncaught exceptions we must exit — the process is in an
+    // undefined state. PM2 / systemd will restart within seconds.
     process.exit(1);
   });
 }
