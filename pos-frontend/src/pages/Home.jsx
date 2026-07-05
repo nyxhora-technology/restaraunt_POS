@@ -43,6 +43,7 @@ const Home = () => {
   const [isGlobalSearchOpen, setIsGlobalSearchOpen] = useState(false);
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [errorDismissed, setErrorDismissed] = useState(false);
   const currency = useCurrency();
   const {
     theme,
@@ -52,7 +53,7 @@ const Home = () => {
     toggleTheme,
     toggleLayout,
   } = useDashboardPreferences();
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["dashboard", user.restaurantId, user.role],
     queryFn: () =>
       ["OWNER", "MANAGER"].includes(user.role)
@@ -63,6 +64,9 @@ const Home = () => {
         user.restaurantId &&
         ["OWNER", "MANAGER"].includes(user.role),
     ),
+    staleTime: 30_000,
+    refetchInterval: 60_000,              // Auto-refresh every 60s
+    refetchIntervalInBackground: false,   // Pause when tab is hidden
   });
   const dashboard = data?.data.data || {};
   const revenueDelta = getPercentageChange(
@@ -74,10 +78,11 @@ const Home = () => {
     dashboard.ordersYesterday,
   );
   const inProgress = (dashboard.pending || 0) + (dashboard.preparing || 0);
-  const [now, setNow] = useState(new Date());
 
+  // ── Live clock — isolated in state so only this re-renders, not the whole page
+  const [now, setNow] = useState(new Date());
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 1000);
+    const timer = setInterval(() => setNow(new Date()), 60_000); // update every minute, not every second
     return () => clearInterval(timer);
   }, []);
 
@@ -85,13 +90,20 @@ const Home = () => {
   const greeting =
     hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
 
+  // Dismiss error banner when data loads successfully
   useEffect(() => {
-    document.title = "POS | Dashboard";
+    if (!isError) setErrorDismissed(false);
+  }, [isError]);
+
+  useEffect(() => {
+    // Include restaurant name in tab title so staff can tell tabs apart
+    const name = dashboard.restaurantName || user.restaurant?.name || "POS";
+    document.title = `${name} — Dashboard`;
     document.documentElement.style.colorScheme = theme;
     return () => {
       document.documentElement.style.removeProperty("color-scheme");
     };
-  }, [theme]);
+  }, [theme, dashboard.restaurantName, user.restaurant?.name]);
 
   useEffect(() => {
     const openGlobalSearch = (event) => {
@@ -104,38 +116,45 @@ const Home = () => {
     return () => window.removeEventListener("keydown", openGlobalSearch);
   }, []);
 
-  const quickActions = [
+  // ── Role-aware quick actions ──────────────────────────────────────────
+  const allQuickActions = [
     {
       label: "New Order",
       description: "Take a new order",
       icon: MdOutlineRoomService,
       action: () => setIsCreateOrderOpen(true),
+      roles: ["OWNER", "MANAGER", "CASHIER", "WAITER"],
     },
     {
       label: "Manage Tables",
       description: "View table layout",
       icon: MdTableRestaurant,
       action: () => navigate("/tables"),
+      roles: ["OWNER", "MANAGER", "CASHIER", "WAITER"],
     },
     {
       label: "Menu Items",
       description: "Browse the menu",
       icon: MdOutlineMenuBook,
       action: () => navigate("/menu"),
+      roles: ["OWNER", "MANAGER"],
     },
     {
       label: "Admin Workspace",
       description: "Manage operations",
       icon: MdAdminPanelSettings,
       action: () => navigate("/dashboard"),
+      roles: ["OWNER", "MANAGER"],
     },
     {
       label: "Settings",
       description: "Restaurant profile",
       icon: MdOutlineSettings,
       action: () => navigate("/settings"),
+      roles: ["OWNER"],
     },
   ];
+  const quickActions = allQuickActions.filter((a) => a.roles.includes(user.role));
 
   const glanceItems = [
     {
@@ -224,10 +243,13 @@ const Home = () => {
               </time>
             </section>
 
-            {isError && (
+            {isError && !errorDismissed && (
               <div className="dashboard-error-banner">
-                Dashboard totals could not be loaded. Recent orders may still be
-                available.
+                <span>Dashboard totals could not be loaded. Recent orders may still be available.</span>
+                <div className="dashboard-error-actions">
+                  <button type="button" onClick={() => refetch()} className="dashboard-error-retry">Retry</button>
+                  <button type="button" onClick={() => setErrorDismissed(true)} className="dashboard-error-dismiss" aria-label="Dismiss error">✕</button>
+                </div>
               </div>
             )}
 
@@ -255,6 +277,7 @@ const Home = () => {
                 footer={`${dashboard.ready || 0} ready for service`}
                 tone="orange"
                 isLoading={isLoading}
+                hideTrend
               />
               <MiniCard
                 title="Today's Orders"
@@ -273,8 +296,25 @@ const Home = () => {
                 footer="based on today's payments"
                 tone="red"
                 isLoading={isLoading}
+                hideTrend
               />
             </section>
+
+            {/* Empty state — first day or early morning with 0 orders */}
+            {!isLoading && !isError && (dashboard.ordersToday || 0) === 0 && (
+              <div className="dashboard-zero-state">
+                <span className="dashboard-zero-icon">☀️</span>
+                <strong>Ready for your first order today</strong>
+                <p>Your numbers will appear here once orders start coming in.</p>
+                <button
+                  type="button"
+                  className="dashboard-zero-cta"
+                  onClick={() => setIsCreateOrderOpen(true)}
+                >
+                  <MdOutlineRoomService /> Take first order
+                </button>
+              </div>
+            )}
 
             <section className="dashboard-primary-grid">
               <RecentOrders />
@@ -323,7 +363,11 @@ const Home = () => {
                         <Icon />
                       </span>
                       <div>
-                        <strong>{isLoading ? "—" : value}</strong>
+                        {isLoading ? (
+                          <div className="dashboard-metric-skeleton" style={{ height: 18, width: 60, margin: '2px 0 6px' }} aria-hidden="true" />
+                        ) : (
+                          <strong>{value}</strong>
+                        )}
                         <small>{label}</small>
                       </div>
                     </div>

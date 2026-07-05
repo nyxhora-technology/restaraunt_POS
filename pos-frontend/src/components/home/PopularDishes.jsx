@@ -74,7 +74,7 @@ const PopularDishes = ({ dishes, isLoading }) => {
           dishes.slice(0, 5).map((dish, index) => (
             <article key={dish.id} className="dashboard-dish-item">
               {dish.image ? (
-                <img src={dish.image} alt="" />
+                <img src={dish.image} alt={dish.name} loading="lazy" decoding="async" />
               ) : (
                 <span className="dashboard-dish-placeholder">
                   <MdOutlineRoomService />

@@ -41,6 +41,7 @@ const MiniCard = ({
   tone = "teal",
   trend,
   isLoading = false,
+  hideTrend = false,   // set true when trend comparison is not meaningful
 }) => {
   return (
     <article className="dashboard-metric-card">
@@ -50,7 +51,7 @@ const MiniCard = ({
       </div>
 
       {isLoading ? (
-        /* Skeleton shimmer — perceived performance (Peak-End Rule) */
+        /* Skeleton shimmer — perceived performance */
         <div className="dashboard-metric-skeleton" aria-hidden="true" />
       ) : (
         <div className="dashboard-metric-value">
@@ -59,21 +60,28 @@ const MiniCard = ({
               {prefix}
               {number}
             </h2>
-            <Sparkline trend={trend} tone={tone} />
+            {!hideTrend && <Sparkline trend={trend} tone={tone} />}
           </div>
-          <div
-            className={`dashboard-metric-trend ${
-              trend > 0 ? "is-positive" : trend < 0 ? "is-negative" : ""
-            }`}
-          >
-            {typeof trend === "number" && (
-              <strong>
-                {trend > 0 ? "↑ " : trend < 0 ? "↓ " : ""}
-                {Math.abs(trend).toFixed(0)}%
-              </strong>
-            )}
-            <span>{footer}</span>
-          </div>
+          {!hideTrend && (
+            <div
+              className={`dashboard-metric-trend ${
+                trend > 0 ? "is-positive" : trend < 0 ? "is-negative" : ""
+              }`}
+            >
+              {typeof trend === "number" && (
+                <strong>
+                  {trend > 0 ? "↑ " : trend < 0 ? "↓ " : ""}
+                  {Math.abs(trend).toFixed(0)}%
+                </strong>
+              )}
+              <span>{footer}</span>
+            </div>
+          )}
+          {hideTrend && footer && (
+            <div className="dashboard-metric-trend">
+              <span>{footer}</span>
+            </div>
+          )}
         </div>
       )}
     </article>

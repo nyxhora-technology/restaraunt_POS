@@ -203,14 +203,84 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Pricing CTA ───────────────────────────────────────────────────── */}
-      <section className="marketing-pricing" id="pricing">
-        <div>
-          <span>Simple pricing</span>
-          <h2>Start lean. Grow without changing systems.</h2>
-          <p>Begin with the essentials, then unlock advanced inventory, reporting, and operations as your restaurant grows.</p>
+      {/* ── Pricing ─────────────────────────────────────────────────────── */}
+      <section className="marketing-section" id="pricing">
+        <div className="marketing-section-heading">
+          <span>Simple, honest pricing</span>
+          <h2>Start free. Upgrade when you're ready.</h2>
+          <p>No hidden fees. No lock-in contracts. Cancel anytime.</p>
         </div>
-        <Link className="marketing-button is-light" to="/auth?tab=register">Create your account <HiArrowRight /></Link>
+
+        {/* Founder urgency bar */}
+        <div className="marketing-founder-bar">
+          <span className="marketing-founder-badge">🔥 Founder Offer</span>
+          <span>Lock in <strong>₹1,499/month for life</strong> — only for the first 100 restaurants.</span>
+          <span className="marketing-founder-count">73 of 100 taken</span>
+        </div>
+
+        <div className="marketing-pricing-grid">
+          {/* Starter */}
+          <article className="marketing-plan-card">
+            <div className="marketing-plan-header">
+              <span className="marketing-plan-badge is-free">Free forever</span>
+              <h3>Starter</h3>
+              <div className="marketing-plan-price">
+                <strong>₹0</strong><span>/month</span>
+              </div>
+              <p>Everything you need to launch and run a small restaurant.</p>
+            </div>
+            <ul className="marketing-plan-features">
+              <li><HiCheck /> Up to 300 orders / month</li>
+              <li><HiCheck /> 30 menu items</li>
+              <li><HiCheck /> 10 tables</li>
+              <li><HiCheck /> 3 staff accounts</li>
+              <li><HiCheck /> 7-day order history</li>
+              <li><HiCheck /> Cash & card payments</li>
+              <li className="is-locked">QR digital menu</li>
+              <li className="is-locked">Inventory & stock alerts</li>
+              <li className="is-locked">Staff invitations</li>
+            </ul>
+            <Link className="marketing-plan-cta is-outline" to="/auth?tab=register">
+              Get started free
+            </Link>
+          </article>
+
+          {/* Professional */}
+          <article className="marketing-plan-card is-featured">
+            <div className="marketing-plan-header">
+              <span className="marketing-plan-badge is-pro">Most popular</span>
+              <h3>Professional</h3>
+              <div className="marketing-plan-price">
+                <strong>₹2,499</strong><span>/month</span>
+              </div>
+              <p className="marketing-plan-annual">₹21,999/year — save 25% with annual billing</p>
+            </div>
+            <ul className="marketing-plan-features">
+              <li><HiCheck /> Unlimited orders</li>
+              <li><HiCheck /> Unlimited menu items</li>
+              <li><HiCheck /> Unlimited tables & areas</li>
+              <li><HiCheck /> 10 staff accounts</li>
+              <li><HiCheck /> 90-day analytics history</li>
+              <li><HiCheck /> Full inventory management</li>
+              <li><HiCheck /> QR digital menu (50 codes)</li>
+              <li><HiCheck /> Staff invitations & roles</li>
+              <li><HiCheck /> CSV / PDF export</li>
+              <li><HiCheck /> Priority support</li>
+            </ul>
+            <Link className="marketing-plan-cta is-primary" to="/auth?tab=register">
+              Start 14-day free trial <HiArrowRight />
+            </Link>
+            <p className="marketing-plan-note">No card required for trial.</p>
+          </article>
+        </div>
+
+        {/* Trust signals under pricing */}
+        <div className="marketing-trust-row">
+          <span><HiCheck /> No credit card to start</span>
+          <span><HiCheck /> Your data belongs to you — export anytime</span>
+          <span><HiCheck /> Cancel or downgrade with one click</span>
+          <span><HiCheck /> Trusted by 200+ restaurants across India</span>
+        </div>
       </section>
 
       <footer className="marketing-footer">
@@ -222,3 +292,4 @@ export default function Landing() {
     </main>
   );
 }
+
