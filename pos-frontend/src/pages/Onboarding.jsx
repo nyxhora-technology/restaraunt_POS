@@ -148,28 +148,95 @@ export default function Onboarding() {
           <button className="onboarding-logout" onClick={handleLogout}>Sign out</button>
         </header>
 
-        <div className="onboarding-status-card" style={{ "--status-color": cfg?.color, "--status-bg": cfg?.bg, "--status-border": cfg?.border }}>
-          <div className="onboarding-status-icon">
-            <StatusIcon />
-          </div>
-          <h1>{cfg?.title}</h1>
-          <p className="onboarding-status-name">{restaurant.name}</p>
-          <p className="onboarding-status-msg">{dynamicMessage}</p>
-          {cfg?.next && <p className="onboarding-status-next">{cfg.next}</p>}
-
-          {restaurant.status === "PENDING" && (
-            <div className="onboarding-status-polling">
-              <div className="onboarding-mini-spinner" />
-              <span>Checking for updates automatically…</span>
+        {restaurant.status === "PENDING" ? (
+          /* ── Waiting Room ─────────────────────────────────────────────── */
+          <div className="onboarding-waiting-room">
+            <div className="onboarding-waiting-hero">
+              <div className="onboarding-waiting-pulse">✅</div>
+              <h1>Application submitted!</h1>
+              <p className="onboarding-waiting-sub">
+                We received <strong>{restaurant.name}</strong>'s details and our team is reviewing them now.
+              </p>
+              <div className="onboarding-waiting-eta">
+                <span className="onboarding-mini-spinner" />
+                <strong>Usually approved within 2 hours</strong>
+                <span>· We'll email you at {email}</span>
+              </div>
             </div>
-          )}
 
-          {restaurant.status === "REJECTED" && (
-            <button className="onboarding-resubmit-btn" onClick={() => { setResubmit(true); setStep(0); }}>
-              <HiOutlineRefresh /> Edit &amp; resubmit
-            </button>
-          )}
-        </div>
+            {/* What happens next — reduces anxiety */}
+            <div className="onboarding-waiting-timeline">
+              <h2>What happens next</h2>
+              <div className="onboarding-timeline-steps">
+                <div className="onboarding-tl-step is-done">
+                  <div className="onboarding-tl-dot">✓</div>
+                  <div>
+                    <strong>Application submitted</strong>
+                    <p>Your restaurant details are in our system.</p>
+                  </div>
+                </div>
+                <div className="onboarding-tl-step is-active">
+                  <div className="onboarding-tl-dot is-pulse" />
+                  <div>
+                    <strong>Team review</strong>
+                    <p>A Restro team member verifies your details. Usually under 2 hours.</p>
+                  </div>
+                </div>
+                <div className="onboarding-tl-step">
+                  <div className="onboarding-tl-dot" />
+                  <div>
+                    <strong>Workspace unlocked</strong>
+                    <p>You'll be taken straight to your dashboard — no reload needed.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Things to do while waiting */}
+            <div className="onboarding-waiting-tips">
+              <h2>While you wait, you can plan</h2>
+              <div className="onboarding-tips-grid">
+                <div>
+                  <span>📋</span>
+                  <strong>Write your menu</strong>
+                  <p>List your dishes, categories, and prices so you can add them on day one.</p>
+                </div>
+                <div>
+                  <span>👥</span>
+                  <strong>Tell your team</strong>
+                  <p>Once approved, invite your cashier, waiter, and kitchen staff in 30 seconds.</p>
+                </div>
+                <div>
+                  <span>📱</span>
+                  <strong>Bookmark this page</strong>
+                  <p>Open it on the tablet or device you'll use at the counter — it works everywhere.</p>
+                </div>
+              </div>
+            </div>
+
+            <p className="onboarding-waiting-footer">
+              This page checks for approval every 15 seconds automatically.
+              You'll be redirected the moment we approve — no action needed.
+            </p>
+          </div>
+        ) : (
+          /* ── Rejected / Suspended card ────────────────────────────────── */
+          <div className="onboarding-status-card" style={{ "--status-color": cfg?.color, "--status-bg": cfg?.bg, "--status-border": cfg?.border }}>
+            <div className="onboarding-status-icon">
+              <StatusIcon />
+            </div>
+            <h1>{cfg?.title}</h1>
+            <p className="onboarding-status-name">{restaurant.name}</p>
+            <p className="onboarding-status-msg">{dynamicMessage}</p>
+            {cfg?.next && <p className="onboarding-status-next">{cfg.next}</p>}
+
+            {restaurant.status === "REJECTED" && (
+              <button className="onboarding-resubmit-btn" onClick={() => { setResubmit(true); setStep(0); }}>
+                <HiOutlineRefresh /> Edit &amp; resubmit
+              </button>
+            )}
+          </div>
+        )}
       </main>
     );
   }

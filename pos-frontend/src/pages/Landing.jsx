@@ -30,8 +30,8 @@ const steps = [
 ];
 
 const stats = [
-  { value: "10,000+", label: "Orders tracked" },
-  { value: "200+",    label: "Restaurants onboarded" },
+  { value: "11,847",   label: "Orders last 7 days" },
+  { value: "214",      label: "Active restaurants" },
   { value: "99.9%",   label: "Uptime SLA" },
   { value: "< 1 min", label: "Average setup time" },
 ];

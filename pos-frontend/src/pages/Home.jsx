@@ -156,26 +156,37 @@ const Home = () => {
   ];
   const quickActions = allQuickActions.filter((a) => a.roles.includes(user.role));
 
+  // ── "At a Glance" — genuinely different from MiniCards above
+  // MiniCards show: Earnings, In-Progress count, Orders Today, AOV
+  // Glance shows: Available tables, Unpaid orders, Completed today, Table occupancy
+  const occupancyPct = dashboard.totalTables
+    ? Math.round(((dashboard.activeTables || 0) / dashboard.totalTables) * 100)
+    : 0;
+
   const glanceItems = [
     {
-      label: "Total Orders",
-      value: dashboard.ordersToday || 0,
-      icon: MdShoppingBag,
-    },
-    {
-      label: "Total Sales",
-      value: `₹${currency.format(dashboard.revenueToday || 0)}`,
-      icon: BsCashCoin,
-    },
-    {
-      label: "Pending Orders",
-      value: inProgress,
-      icon: GrInProgress,
-    },
-    {
-      label: "Occupied Tables",
-      value: dashboard.activeTables || 0,
+      label: "Tables Available",
+      value: dashboard.availableTables ?? "—",
       icon: MdTableRestaurant,
+      sub: `${dashboard.activeTables || 0} occupied`,
+    },
+    {
+      label: "Unpaid Orders",
+      value: dashboard.unpaidOrders ?? 0,
+      icon: BsCashCoin,
+      sub: "awaiting payment",
+    },
+    {
+      label: "Completed Today",
+      value: dashboard.completed ?? 0,
+      icon: MdShoppingBag,
+      sub: `of ${dashboard.ordersToday || 0} total orders`,
+    },
+    {
+      label: "Table Occupancy",
+      value: `${occupancyPct}%`,
+      icon: GrInProgress,
+      sub: `${dashboard.totalTables || 0} tables total`,
     },
   ];
 
@@ -352,12 +363,12 @@ const Home = () => {
               <div className="dashboard-panel dashboard-glance">
                 <div className="dashboard-panel-header">
                   <div>
-                    <h2>Today at a glance</h2>
-                    <p>Live operational summary</p>
+                    <h2>Operational insights</h2>
+                    <p>Live summary — not shown above</p>
                   </div>
                 </div>
                 <div className="dashboard-glance-list">
-                  {glanceItems.map(({ label, value, icon: Icon }) => (
+                  {glanceItems.map(({ label, value, icon: Icon, sub }) => (
                     <div key={label}>
                       <span>
                         <Icon />
@@ -369,6 +380,7 @@ const Home = () => {
                           <strong>{value}</strong>
                         )}
                         <small>{label}</small>
+                        {sub && !isLoading && <span className="dashboard-glance-sub">{sub}</span>}
                       </div>
                     </div>
                   ))}
