@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import OrderCard from "../components/orders/OrderCard";
 import BackButton from "../components/shared/BackButton";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -44,7 +45,7 @@ const Orders = () => {
   };
 
   useEffect(() => {
-    document.title = "POS | Orders";
+    // title set via Helmet
     document.documentElement.style.colorScheme = theme;
     return () => {
       document.documentElement.style.removeProperty("color-scheme");

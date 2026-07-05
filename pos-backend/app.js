@@ -12,6 +12,7 @@ const prisma = require("./config/prisma");
 const globalErrorHandler = require("./middlewares/globalErrorHandler");
 const { initSocket } = require("./config/socket");
 const { webHookVerification } = require("./controllers/paymentController");
+const { sanitizeInput } = require("./middlewares/sanitizeInput");
 
 const app = express();
 
@@ -104,6 +105,7 @@ app.post(
 );
 
 app.use(express.json({ limit: "256kb" }));
+app.use(sanitizeInput); // Strip HTML + control chars from all string body values
 
 // Attach request timing to all /api routes
 app.use("/api", (req, res, next) => {
@@ -140,6 +142,16 @@ app.use("/api/table",      require("./routes/tableRoute"));
 app.use("/api/payment",    require("./routes/paymentRoute"));
 app.use("/api/inventory",  require("./routes/inventoryRoute"));
 app.use("/api/qr",         require("./routes/qrRoute"));
+
+// ── Write limiter — applied after routing so it only fires on write verbs
+// Uses a router-level middleware that checks req.method before rate-limiting.
+// This avoids penalising GET-heavy polling (dashboard, orders list, kitchen).
+app.use("/api", (req, res, next) => {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    return writeLimiter(req, res, next);
+  }
+  next();
+});
 
 app.use((_req, _res, next) => {
   next(Object.assign(new Error("Route not found"), { statusCode: 404 }));

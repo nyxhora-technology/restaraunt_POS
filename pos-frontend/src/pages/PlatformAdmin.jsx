@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import {
@@ -34,7 +35,7 @@ const PlatformAdmin = () => {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    document.title = "POS | Platform Admin";
+    // title set via Helmet
   }, []);
 
   const statsQuery = useQuery({

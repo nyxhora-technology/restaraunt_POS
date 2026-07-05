@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useDispatch, useSelector } from "react-redux";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
@@ -143,6 +144,10 @@ export default function Onboarding() {
 
     return (
       <main className="onboarding-shell">
+        <Helmet>
+          <title>{restaurant.status === "PENDING" ? "Application Under Review" : restaurant.status === "REJECTED" ? "Application Not Approved" : "Account Suspended"} — Restro</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
         <header className="onboarding-topbar">
           <a className="onboarding-brand" href="/"><img src={logo} alt="" /><span>Restro</span></a>
           <button className="onboarding-logout" onClick={handleLogout}>Sign out</button>

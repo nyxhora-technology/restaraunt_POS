@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import {
   HiArrowRight,
@@ -61,12 +62,15 @@ const testimonials = [
 ];
 
 export default function Landing() {
-  useEffect(() => {
-    document.title = "Restro | Modern Restaurant POS & Operations";
-  }, []);
-
   return (
     <main className="marketing-page">
+      <Helmet>
+        <title>Restro — Modern Restaurant POS &amp; Operations | Free Forever Plan</title>
+        <meta name="description" content="Run your restaurant without the chaos. Orders, tables, kitchen, payments, inventory, staff, and QR menus — one modern platform. Free forever plan available." />
+        <meta property="og:title" content="Restro — Restaurant operations, in one place" />
+        <meta property="og:description" content="Modern POS for faster orders, live kitchen, inventory, QR menus. 214 restaurants trust Restro. Free forever plan." />
+        <meta property="og:url" content="https://restro.in" />
+      </Helmet>
       <nav className="marketing-nav" aria-label="Main navigation">
         <Link className="marketing-brand" to="/" aria-label="Restro home">
           <img src={logo} alt="" />

@@ -6658,3 +6658,25 @@ body { margin: 0; background: #0b1114; }
   color: #3d5250;
   margin: 0;
 }
+
+/* -- Dashboard status badges (SUSPENDED / PENDING in greeting) ------------ */
+.dashboard-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.dashboard-status-badge.is-suspended {
+  background: rgba(239,68,68,.1);
+  border: 1px solid rgba(239,68,68,.25);
+  color: #fca5a5;
+}
+.dashboard-status-badge.is-pending {
+  background: rgba(246,177,0,.08);
+  border: 1px solid rgba(246,177,0,.2);
+  color: #f6d860;
+}

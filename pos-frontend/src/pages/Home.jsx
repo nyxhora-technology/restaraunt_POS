@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -96,14 +97,11 @@ const Home = () => {
   }, [isError]);
 
   useEffect(() => {
-    // Include restaurant name in tab title so staff can tell tabs apart
-    const name = dashboard.restaurantName || user.restaurant?.name || "POS";
-    document.title = `${name} — Dashboard`;
     document.documentElement.style.colorScheme = theme;
     return () => {
       document.documentElement.style.removeProperty("color-scheme");
     };
-  }, [theme, dashboard.restaurantName, user.restaurant?.name]);
+  }, [theme]);
 
   useEffect(() => {
     const openGlobalSearch = (event) => {
@@ -192,6 +190,10 @@ const Home = () => {
 
   return (
     <div className={`dashboard-shell theme-${theme}`}>
+      <Helmet>
+        <title>{dashboard.restaurantName || user.restaurant?.name || "Restro"} — Dashboard</title>
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="dashboard-app">
         {effectiveLayout === "sidebar" && (
           <DashboardSidebar
@@ -223,33 +225,28 @@ const Home = () => {
 
           <main className="dashboard-content">
             <section className="dashboard-greeting">
-              <svg
-                className="dashboard-greeting-waves"
-                viewBox="0 0 900 120"
-                preserveAspectRatio="none"
-                aria-hidden="true"
-              >
-                <path d="M0 92 C180 40 315 115 470 66 S735 38 900 78" />
-                <path d="M0 106 C175 58 325 124 485 80 S745 54 900 90" />
-                <path d="M0 75 C210 28 335 96 505 52 S755 20 900 61" />
-              </svg>
               <div>
                 <h1>
-                  {greeting}, {user.name || "there"}! <span>👋</span>
+                  {greeting}, {user.name?.split(" ")[0] || "there"}! <span>👋</span>
                 </h1>
                 <p>
-                  Here&apos;s what&apos;s happening with your restaurant today.
+                  {dashboard.restaurantName || user.restaurant?.name || "Your restaurant"} · Here's today's snapshot.
                 </p>
+                {/* Restaurant status warning — genuinely useful information */}
+                {user.restaurant?.status === "SUSPENDED" && (
+                  <div className="dashboard-status-badge is-suspended">⚠️ Account suspended — contact support</div>
+                )}
+                {user.restaurant?.status === "PENDING" && (
+                  <div className="dashboard-status-badge is-pending">⏳ Pending approval — some features are locked</div>
+                )}
               </div>
               <time dateTime={now.toISOString()}>
                 {new Intl.DateTimeFormat(undefined, {
                   weekday: "short",
                   month: "short",
                   day: "numeric",
-                  year: "numeric",
                   hour: "numeric",
                   minute: "2-digit",
-                  second: "2-digit"
                 }).format(now)}
               </time>
             </section>

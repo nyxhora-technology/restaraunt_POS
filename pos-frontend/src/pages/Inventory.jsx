@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import {
@@ -1029,7 +1030,7 @@ const Inventory = () => {
   const [showAlerts, setShowAlerts] = useState(false);
   const queryClient = useQueryClient();
 
-  useEffect(() => { document.title = "POS | Inventory"; }, []);
+  useEffect(() => { /* document.title now set via Helmet */ }, []);
 
   const { data: suppliersData } = useQuery({
     queryKey: ["suppliers"],

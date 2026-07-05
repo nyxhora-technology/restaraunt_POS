@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useDispatch, useSelector } from "react-redux";
 import { useMutation } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
@@ -36,7 +37,7 @@ const Settings = () => {
   });
 
   useEffect(() => {
-    document.title = "POS | Settings";
+    // title set via Helmet
     document.documentElement.style.colorScheme = theme;
     return () => {
       document.documentElement.style.removeProperty("color-scheme");

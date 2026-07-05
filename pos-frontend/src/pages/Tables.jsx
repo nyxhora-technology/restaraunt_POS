@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { useDispatch, useSelector } from "react-redux";
@@ -45,7 +46,7 @@ const Tables = () => {
   }, [dispatch, location.state?.orderFlow, location.state?.retainCart]);
 
   useEffect(() => {
-    document.title = "POS | Tables";
+    // title set via Helmet
     document.documentElement.style.colorScheme = theme;
     return () => {
       document.documentElement.style.removeProperty("color-scheme");

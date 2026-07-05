@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router-dom";
 import { HiArrowLeft, HiCheckCircle } from "react-icons/hi";
 import restaurant from "../assets/images/restro_image.png";
@@ -13,7 +14,6 @@ export default function Auth() {
   useEffect(() => {
     const registering = searchParams.get("tab") === "register";
     setIsRegister(registering);
-    document.title = registering ? "Create your Restro account" : "Sign in to Restro";
   }, [searchParams]);
 
   const switchMode = (registering) => {
@@ -23,6 +23,11 @@ export default function Auth() {
 
   return (
     <main className="auth-page">
+      <Helmet>
+        <title>{isRegister ? "Create your Restro account" : "Sign in to Restro"} — Free Restaurant POS</title>
+        <meta name="description" content={isRegister ? "Create your free Restro account. Start taking orders, managing tables, and running your restaurant in minutes." : "Sign in to your Restro restaurant workspace."} />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <section className="auth-visual">
         <img src={restaurant} alt="A busy modern restaurant dining room" />
         <div className="auth-visual-overlay" />

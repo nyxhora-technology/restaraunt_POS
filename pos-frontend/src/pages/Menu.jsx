@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import BackButton from "../components/shared/BackButton";
 import { MdRestaurantMenu } from "react-icons/md";
 import MenuContainer from "../components/menu/MenuContainer";
@@ -9,7 +10,7 @@ import { useSelector } from "react-redux";
 
 const Menu = () => {
   useEffect(() => {
-    document.title = "POS | Menu";
+    // title set via Helmet
   }, []);
 
   const customerData = useSelector((state) => state.customer);
