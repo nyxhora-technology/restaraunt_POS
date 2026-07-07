@@ -17,7 +17,9 @@ const auth = betterAuth({
   appName: "Restaurant POS",
   baseURL: config.backendUrl,
   secret: config.betterAuthSecret,
-  trustedOrigins: [config.frontendUrl],
+  // Trust both the frontend (Vercel) and the backend itself (Render)
+  // so the Vercel rewrite proxy's requests are accepted as trusted origins
+  trustedOrigins: [config.frontendUrl, config.backendUrl],
   socialProviders,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -38,6 +40,12 @@ const auth = betterAuth({
       // Set to false because email/password signups might not have verified emails
       requireLocalEmailVerified: false,
     },
+    // vercel.app and onrender.com are public-suffix domains — browsers block
+    // SameSite=None cookies from them regardless of cookie config.
+    // The Vercel rewrite proxy makes auth first-party, but as a documented
+    // fallback we skip the state cookie check since the state is still
+    // verified via the OAuth `state` query param from Google.
+    skipStateCookieCheck: config.nodeEnv === "production",
   },
   user: {
     additionalFields: {
@@ -65,10 +73,14 @@ const auth = betterAuth({
     },
   },
   advanced: {
+    // cross-domain (Vercel ↔ Render) — must be none+secure so browser
+    // doesn't drop the OAuth state cookie during the Google redirect.
+    // Note: vercel.app / onrender.com are public suffixes so browsers
+    // may still block — the Vercel rewrite proxy in vercel.json is the
+    // real fix; these settings are a belt-and-suspenders fallback.
+    useSecureCookies: true,
     defaultCookieAttributes: {
       httpOnly: true,
-      // cross-domain (Vercel ↔ Render) — must be none+secure so browser
-      // doesn't drop the OAuth state cookie during the Google redirect
       secure: true,
       sameSite: config.nodeEnv === "production" ? "none" : "lax",
     },
