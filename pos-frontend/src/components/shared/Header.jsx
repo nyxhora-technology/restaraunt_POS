@@ -136,7 +136,9 @@ const Header = () => {
           onClick={() => navigate(APP_ROUTES.settings)}
           className="common-header-user"
         >
-          <FaUserCircle className="common-header-avatar" />
+          <div className="common-header-initial-avatar">
+            {(userData.name || "Test User").charAt(0).toUpperCase()}
+          </div>
           <div>
             <h1>{userData.name || "TEST USER"}</h1>
             <p>{userData.role || "Role"}</p>

@@ -147,6 +147,22 @@
   font-size: 40px;
 }
 
+.common-header-initial-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--dash-primary-strong), var(--dash-primary));
+  color: #ffffff;
+  font-size: 18px;
+  font-weight: 700;
+  flex: 0 0 auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  text-transform: uppercase;
+}
+
 .common-header-user h1 {
   max-width: 130px;
   overflow: hidden;

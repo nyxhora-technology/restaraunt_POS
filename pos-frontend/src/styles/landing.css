@@ -8,11 +8,24 @@
 .marketing-nav-links a:hover,.marketing-signin:hover { color: white; }
 .marketing-nav-actions { gap: 20px; }
 .marketing-signin { color: #c5cfce; font-size: 14px; font-weight: 650; }
-.marketing-account-chip { display: inline-flex; min-width: 0; max-width: 260px; align-items: center; gap: 9px; border: 1px solid rgba(148,163,184,.28); border-radius: 999px; background: rgba(255,255,255,.05); color: #eef7f4; padding: 6px 10px 6px 6px; font-size: 13px; font-weight: 800; }
-.marketing-account-chip:hover { border-color: rgba(99,208,210,.55); background: rgba(99,208,210,.09); }
-.marketing-account-chip span { display: grid; width: 30px; height: 30px; flex: 0 0 30px; place-items: center; border-radius: 50%; background: #63d0d2; color: #071011; font-size: 12px; }
-.marketing-account-chip strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.marketing-account-chip small { flex: 0 0 auto; color: #9fb5b2; font-size: 10px; text-transform: capitalize; }
+.marketing-session-actions { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.marketing-dashboard-button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; gap: 7px; border-radius: 8px; padding: 0 13px; font-size: 13px; font-weight: 800; }
+.marketing-dashboard-button { background: #35c0c3; color: #071011; box-shadow: 0 10px 24px rgba(53,192,195,.16); }
+.marketing-dashboard-button:hover { background: #63d0d2; transform: translateY(-1px); }
+.marketing-account-menu { position: relative; }
+.marketing-account-trigger { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid rgba(148,163,184,.28); border-radius: 50%; background: #eef7f4; color: #0b1114; font-size: 13px; font-weight: 900; text-transform: uppercase; box-shadow: 0 10px 24px rgba(0,0,0,.18); }
+.marketing-account-trigger:hover { border-color: rgba(99,208,210,.55); transform: translateY(-1px); }
+.marketing-account-panel { position: absolute; top: calc(100% + 12px); right: 0; z-index: 50; width: 270px; border: 1px solid rgba(148,163,184,.22); border-radius: 12px; background: #101a18; box-shadow: 0 20px 50px rgba(0,0,0,.38); padding: 10px; }
+.marketing-account-summary { display: flex; min-width: 0; align-items: center; gap: 10px; border-bottom: 1px solid rgba(148,163,184,.16); padding: 8px 8px 12px; }
+.marketing-account-summary > span { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 50%; background: #eef7f4; color: #0b1114; font-weight: 900; }
+.marketing-account-summary > div { min-width: 0; }
+.marketing-account-summary strong,.marketing-account-summary small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.marketing-account-summary strong { color: #f7fbfa; font-size: 13px; }
+.marketing-account-summary small { margin-top: 3px; color: #9fb5b2; font-size: 11px; }
+.marketing-account-role { width: fit-content; margin: 10px 8px; border: 1px solid rgba(99,208,210,.28); border-radius: 999px; background: rgba(99,208,210,.08); color: #9ee6d1; padding: 4px 9px; font-size: 10px; font-weight: 900; text-transform: capitalize; }
+.marketing-account-logout { display: flex; width: 100%; align-items: center; gap: 9px; border-radius: 8px; color: #fecaca; padding: 10px 9px; font-size: 13px; font-weight: 800; text-align: left; }
+.marketing-account-logout:hover { background: rgba(239,68,68,.08); }
+.marketing-account-logout:disabled { cursor: wait; opacity: .65; }
 .marketing-button { display: inline-flex; min-height: 52px; align-items: center; justify-content: center; gap: 9px; border-radius: 10px; background: #35c0c3; color: #071011; padding: 0 24px; font-weight: 800; box-shadow: 0 14px 35px rgba(53,192,195,.18); transition: transform .2s, background .2s; }
 .marketing-button:hover { background: #63d0d2; transform: translateY(-2px); }
 .marketing-button.is-small { min-height: 42px; padding: 0 17px; font-size: 14px; }
@@ -221,7 +234,6 @@
   .order-type-choices { grid-template-columns: 1fr; }
   .setup-checklist { padding: 18px 16px; }
 }
-
 
 .dashboard-action-list {
   display: grid;
@@ -1758,6 +1770,21 @@
   .landing-v2 .marketing-nav-actions {
     gap: 10px;
   }
+  .marketing-session-actions {
+    gap: 7px;
+  }
+  .marketing-dashboard-button,
+  .marketing-account-trigger {
+    min-height: 36px;
+    font-size: 12px;
+  }
+  .marketing-dashboard-button {
+    padding: 0 10px;
+  }
+  .marketing-account-trigger {
+    width: 36px;
+    height: 36px;
+  }
   .landing-v2 .marketing-nav-actions .marketing-signin {
     display: none;
   }
@@ -1844,6 +1871,10 @@
   }
 }
 @media (max-width: 470px) {
+  .marketing-account-panel {
+    right: -44px;
+    width: min(270px, calc(100vw - 32px));
+  }
   .landing-hero-actions {
     width: 100%;
     flex-direction: column;

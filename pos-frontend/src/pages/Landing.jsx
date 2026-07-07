@@ -1,7 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { logout } from "../https";
+import { removeUser } from "../redux/slices/userSlice";
 import {
   HiArrowRight,
   HiCheck,
@@ -15,6 +18,8 @@ import {
   HiDesktopComputer,
   HiMoon,
   HiSun,
+  HiLogout,
+  HiViewGrid
 } from "react-icons/hi";
 import logo from "../assets/images/logo.png";
 import { getHomeRoute } from "../components/shared/RouteGuards";
@@ -268,7 +273,38 @@ function InventoryPreview() {
 
 export default function Landing() {
   const user = useSelector((state) => state.user);
+  const dispatch = useDispatch();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   useLoadData();
+
+  const logoutMutation = useMutation({
+    mutationFn: () => logout(),
+    onSettled: () => {
+      queryClient.clear();
+      dispatch(removeUser());
+      navigate("/");
+    },
+  });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
+
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const accountRef = useRef(null);
+
+  useEffect(() => {
+    if (!isAccountOpen) return undefined;
+    const closeAccount = (event) => {
+      if (!accountRef.current?.contains(event.target)) {
+        setIsAccountOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeAccount);
+    return () => document.removeEventListener("mousedown", closeAccount);
+  }, [isAccountOpen]);
+
   const homeRoute = user.isAuth ? getHomeRoute(user) : "/auth";
   const displayName = user.name || user.email || "User";
   const avatarInitial = displayName.trim().charAt(0).toUpperCase() || "U";
@@ -309,11 +345,45 @@ export default function Landing() {
         <div className="marketing-nav-actions">
           <ThemeControl />
           {user.isAuth ? (
-            <Link className="marketing-account-chip" to={homeRoute}>
-              <span>{avatarInitial}</span>
-              <strong>{displayName}</strong>
-              <small>{user.role || "Staff"}</small>
-            </Link>
+            <div className="marketing-session-actions">
+              <Link className="marketing-dashboard-button" to={homeRoute}>
+                <HiViewGrid /> Dashboard
+              </Link>
+              <div className="marketing-account-menu" ref={accountRef}>
+                <button
+                  type="button"
+                  className="marketing-account-trigger"
+                  onClick={() => setIsAccountOpen((value) => !value)}
+                  aria-label="Open account menu"
+                  aria-expanded={isAccountOpen}
+                >
+                  {avatarInitial}
+                </button>
+                {isAccountOpen && (
+                  <div className="marketing-account-panel">
+                    <div className="marketing-account-summary">
+                      <span>{avatarInitial}</span>
+                      <div>
+                        <strong>{displayName}</strong>
+                        <small>{user.email || user.role || "Signed in"}</small>
+                      </div>
+                    </div>
+                    <div className="marketing-account-role">
+                      {user.role || "Staff"}
+                    </div>
+                    <button
+                      type="button"
+                      className="marketing-account-logout"
+                      onClick={handleLogout}
+                      disabled={logoutMutation.isPending}
+                    >
+                      <HiLogout />
+                      {logoutMutation.isPending ? "Logging out" : "Log out"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           ) : (
             <>
               <Link className="marketing-signin" to="/auth">Sign in</Link>
