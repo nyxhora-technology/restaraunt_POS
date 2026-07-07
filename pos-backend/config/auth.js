@@ -67,8 +67,16 @@ const auth = betterAuth({
   advanced: {
     defaultCookieAttributes: {
       httpOnly: true,
-      secure: config.nodeEnv === "production",
-      sameSite: "lax",
+      // cross-domain (Vercel ↔ Render) — must be none+secure so browser
+      // doesn't drop the OAuth state cookie during the Google redirect
+      secure: true,
+      sameSite: config.nodeEnv === "production" ? "none" : "lax",
+    },
+    // Tell Better-Auth to trust Render's forwarded IP header so
+    // rate limiting works per-client instead of a shared bucket
+    ipAddress: {
+      ipAddressHeaders: ["x-forwarded-for"],
+      trustedProxies: ["loopback", "linklocal", "uniquelocal"],
     },
   },
 });
