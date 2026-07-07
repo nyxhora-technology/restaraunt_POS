@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import {
   HiArrowRight,
   HiCheck,
@@ -16,11 +17,13 @@ import {
   HiSun,
 } from "react-icons/hi";
 import logo from "../assets/images/logo.png";
+import { getHomeRoute } from "../components/shared/RouteGuards";
 import {
   getPublicUrl,
   seoIndexingEnabled,
   seoRobots,
 } from "../config/site";
+import useLoadData from "../hooks/useLoadData";
 
 const capabilityGroups = [
   {
@@ -264,6 +267,12 @@ function InventoryPreview() {
 }
 
 export default function Landing() {
+  const user = useSelector((state) => state.user);
+  useLoadData();
+  const homeRoute = user.isAuth ? getHomeRoute(user) : "/auth";
+  const displayName = user.name || user.email || "User";
+  const avatarInitial = displayName.trim().charAt(0).toUpperCase() || "U";
+
   return (
     <main className="marketing-page landing-v2">
       <Helmet>
@@ -299,10 +308,20 @@ export default function Landing() {
         </div>
         <div className="marketing-nav-actions">
           <ThemeControl />
-          <Link className="marketing-signin" to="/auth">Sign in</Link>
-          <Link className="marketing-button is-small" to="/auth?tab=register">
-            Create account
-          </Link>
+          {user.isAuth ? (
+            <Link className="marketing-account-chip" to={homeRoute}>
+              <span>{avatarInitial}</span>
+              <strong>{displayName}</strong>
+              <small>{user.role || "Staff"}</small>
+            </Link>
+          ) : (
+            <>
+              <Link className="marketing-signin" to="/auth">Sign in</Link>
+              <Link className="marketing-button is-small" to="/auth?tab=register">
+                Create account
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -315,8 +334,11 @@ export default function Landing() {
             table selection and menu entry to kitchen status, payment, and reporting.
           </p>
           <div className="landing-hero-actions">
-            <Link className="marketing-button" to="/auth?tab=register">
-              Create free account <HiArrowRight />
+            <Link
+              className="marketing-button"
+              to={user.isAuth ? homeRoute : "/auth?tab=register"}
+            >
+              {user.isAuth ? "Open workspace" : "Create free account"} <HiArrowRight />
             </Link>
             <a className="landing-secondary-button" href="#workflow">
               See the workflow

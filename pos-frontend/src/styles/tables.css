@@ -1997,6 +1997,7 @@
   }
 
   .dashboard-user-copy,
+  .dashboard-user-role,
   .dashboard-user > svg {
     display: none;
   }

@@ -1,9 +1,12 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { StaticRouter } from "react-router";
 import { HelmetProvider } from "react-helmet-async";
+import { Provider } from "react-redux";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Landing from "./pages/Landing";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import store from "./redux/store";
 
 const PUBLIC_ROUTES = {
   "/": Landing,
@@ -16,11 +19,16 @@ export const renderPublicRoute = (pathname) => {
   if (!Page) throw new Error(`Unsupported public route: ${pathname}`);
 
   const helmetContext = {};
+  const queryClient = new QueryClient();
   const markup = renderToStaticMarkup(
     <HelmetProvider context={helmetContext}>
-      <StaticRouter location={pathname}>
-        <Page />
-      </StaticRouter>
+      <Provider store={store}>
+        <QueryClientProvider client={queryClient}>
+          <StaticRouter location={pathname}>
+            <Page />
+          </StaticRouter>
+        </QueryClientProvider>
+      </Provider>
     </HelmetProvider>,
   );
   const { helmet } = helmetContext;

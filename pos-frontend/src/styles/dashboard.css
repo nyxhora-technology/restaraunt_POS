@@ -1786,25 +1786,50 @@
 
 .dashboard-user-copy {
   display: flex;
-  max-width: 130px;
+  max-width: 180px;
   flex-direction: column;
 }
 
 .dashboard-user-copy strong,
-.dashboard-user-copy small {
+.dashboard-user-copy small,
+.dashboard-user-kicker,
+.dashboard-user-role {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.dashboard-user-kicker {
+  color: var(--dash-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
 .dashboard-user-copy strong {
   color: var(--dash-text);
   font-size: 13px;
+  line-height: 1.2;
 }
 
 .dashboard-user-copy small {
   color: var(--dash-muted);
   font-size: 11px;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.dashboard-user-role {
+  max-width: 90px;
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  background: var(--dash-bg);
+  color: var(--dash-muted);
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 800;
   text-transform: capitalize;
 }
 
@@ -1863,6 +1888,18 @@
   color: var(--dash-muted);
   font-size: 10px;
   text-overflow: ellipsis;
+}
+
+.dashboard-profile-menu > div small {
+  width: fit-content;
+  margin-top: 6px;
+  border: 1px solid var(--dash-border);
+  border-radius: 999px;
+  color: var(--dash-muted);
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: capitalize;
 }
 
 .dashboard-profile-menu button {

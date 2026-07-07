@@ -42,6 +42,10 @@ const DashboardTopbar = ({
   const { isManagement } = useRole();
   const { hasInventory } = useFeature();
   const canViewInventoryAlerts = isManagement && hasInventory;
+  const displayName = user.name || user.email || "User";
+  const displayEmail = user.email || "Signed in";
+  const displayRole = user.role || "Staff";
+  const avatarInitial = displayName.trim().charAt(0).toUpperCase() || "U";
 
   const alertsQuery = useQuery({
     queryKey: ["inventory-alerts", user.restaurantId, user.role],
@@ -172,14 +176,18 @@ const DashboardTopbar = ({
             className="dashboard-user"
             onClick={() => setIsProfileOpen((value) => !value)}
             aria-expanded={isProfileOpen}
+            aria-label={`Logged in as ${displayName}`}
+            title={`Logged in as ${displayName}${user.email ? ` (${user.email})` : ""}`}
           >
             <span className="dashboard-user-avatar">
-              {(user.name || "U").trim().charAt(0).toUpperCase()}
+              {avatarInitial}
             </span>
             <span className="dashboard-user-copy">
-              <strong>{user.name || "User"}</strong>
-              <small>{user.role || "Staff"}</small>
+              <span className="dashboard-user-kicker">Logged in as</span>
+              <strong>{displayName}</strong>
+              <small>{displayEmail}</small>
             </span>
+            <span className="dashboard-user-role">{displayRole}</span>
             <MdKeyboardArrowDown
               className={isProfileOpen ? "is-rotated" : ""}
             />
@@ -188,8 +196,9 @@ const DashboardTopbar = ({
           {isProfileOpen && (
             <div className="dashboard-profile-menu">
               <div>
-                <strong>{user.name || "User"}</strong>
-                <span>{user.email}</span>
+                <strong>{displayName}</strong>
+                <span>{displayEmail}</span>
+                <small>{displayRole}</small>
               </div>
               <button type="button" onClick={() => goTo("/app/settings")}>
                 <MdOutlineSettings /> Settings

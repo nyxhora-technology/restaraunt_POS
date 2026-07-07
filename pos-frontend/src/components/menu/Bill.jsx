@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { addOrder, getErrorMessage } from "../../https";
 import { getTotalPrice, removeAllItems } from "../../redux/slices/cartSlice";
 import { removeCustomer } from "../../redux/slices/customerSlice";
+import { APP_ROUTES } from "../../utils/authRouting";
 import CreateOrderModal from "../shared/CreateOrderModal";
 import {
   openOrderTicketWindow,
@@ -50,7 +51,7 @@ const Bill = () => {
           variant: billOpened ? "success" : "warning",
         },
       );
-      navigate("/", { replace: true });
+      navigate(APP_ROUTES.dashboard, { replace: true });
     },
     onError: (error, { printWindow }) => {
       showOrderTicketError(printWindow);

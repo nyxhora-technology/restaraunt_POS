@@ -41,7 +41,12 @@ export default function AuthCallback() {
             ? getSafeAppReturnTo(searchParams.get("returnTo"), fallback)
             : fallback;
         navigate(destination, { replace: true });
-      } catch {
+      } catch (error) {
+        const status = error?.response?.status;
+        if (status === 404 || status === 403) {
+          navigate(APP_ROUTES.onboarding, { replace: true });
+          return;
+        }
         setError("We couldn't finish your Google sign-up. Please try again.");
       }
     };
