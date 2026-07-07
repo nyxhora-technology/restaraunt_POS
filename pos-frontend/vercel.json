@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://restaraunt-pos.onrender.com/api/:path*"
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": "https://restaraunt-pos.onrender.com/socket.io/:path*"
+    }
+  ]
+}
