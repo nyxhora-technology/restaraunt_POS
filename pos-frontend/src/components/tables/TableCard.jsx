@@ -19,6 +19,7 @@ const TableCard = ({
   const maxSeats = table.seats ?? 0;
   const area = table.area;
   const isAvailable = table.status === "AVAILABLE";
+  const nextReservation = table.reservations?.[0];
   const isSelectable = isAvailable && !disabled;
 
   const helperText = selected
@@ -26,7 +27,9 @@ const TableCard = ({
     : disabledReason
       ? disabledReason
       : isAvailable
-        ? `Fits ${minSeats}–${maxSeats} guests`
+        ? nextReservation
+          ? `Reserved ${new Date(nextReservation.reservedAt).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
+          : `Fits ${minSeats}–${maxSeats} guests`
         : table.currentOrder
           ? `Order #${table.currentOrder.orderNo} · ${table.currentOrder.customerName}`
           : table.status === "CLEANING"

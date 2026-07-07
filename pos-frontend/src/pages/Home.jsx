@@ -27,6 +27,8 @@ import RecentOrders from "../components/home/RecentOrders";
 import PopularDishes from "../components/home/PopularDishes";
 import SetupChecklist from "../components/home/SetupChecklist";
 import PlanUsageBar from "../components/home/PlanUsageBar";
+import InventorySignalCard from "../components/home/InventorySignalCard";
+import Walkthrough, { ReplayTourButton } from "../components/shared/Walkthrough";
 import useDashboardPreferences from "../hooks/useDashboardPreferences";
 import useCurrency from "../hooks/useCurrency";
 import { getDashboard } from "../https";
@@ -127,28 +129,28 @@ const Home = () => {
       label: "Manage Tables",
       description: "View table layout",
       icon: MdTableRestaurant,
-      action: () => navigate("/tables"),
+      action: () => navigate("/app/tables"),
       roles: ["OWNER", "MANAGER", "CASHIER", "WAITER"],
     },
     {
       label: "Menu Items",
       description: "Browse the menu",
       icon: MdOutlineMenuBook,
-      action: () => navigate("/menu"),
+      action: () => navigate("/app/menu"),
       roles: ["OWNER", "MANAGER"],
     },
     {
       label: "Admin Workspace",
       description: "Manage operations",
       icon: MdAdminPanelSettings,
-      action: () => navigate("/dashboard"),
+      action: () => navigate("/app/dashboard"),
       roles: ["OWNER", "MANAGER"],
     },
     {
       label: "Settings",
       description: "Restaurant profile",
       icon: MdOutlineSettings,
-      action: () => navigate("/settings"),
+      action: () => navigate("/app/settings"),
       roles: ["OWNER"],
     },
   ];
@@ -190,6 +192,7 @@ const Home = () => {
 
   return (
     <div className={`dashboard-shell theme-${theme}`}>
+      <Walkthrough theme={theme} layout={effectiveLayout} />
       <Helmet>
         <title>{dashboard.restaurantName || user.restaurant?.name || "Restro"} — Dashboard</title>
         <meta name="robots" content="noindex" />
@@ -223,14 +226,18 @@ const Home = () => {
             notificationCount={dashboard.pending || 0}
           />
 
-          <main className="dashboard-content">
-            <section className="dashboard-greeting">
+          <main className="dashboard-content dashboard-overview">
+            <header className="analytics-header dashboard-overview-header">
               <div>
+                <p className="analytics-eyebrow">Live operations</p>
                 <h1>
                   {greeting}, {user.name?.split(" ")[0] || "there"}! <span>👋</span>
                 </h1>
                 <p>
-                  {dashboard.restaurantName || user.restaurant?.name || "Your restaurant"} · Here's today's snapshot.
+                  {dashboard.restaurantName ||
+                    user.restaurant?.name ||
+                    "Your restaurant"}{" "}
+                  · Today&apos;s service, revenue, and team priorities.
                 </p>
                 {/* Restaurant status warning — genuinely useful information */}
                 {user.restaurant?.status === "SUSPENDED" && (
@@ -240,16 +247,26 @@ const Home = () => {
                   <div className="dashboard-status-badge is-pending">⏳ Pending approval — some features are locked</div>
                 )}
               </div>
-              <time dateTime={now.toISOString()}>
-                {new Intl.DateTimeFormat(undefined, {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                  hour: "numeric",
-                  minute: "2-digit",
-                }).format(now)}
-              </time>
-            </section>
+              <div className="dashboard-header-actions">
+                <ReplayTourButton />
+                <time className="dashboard-time-badge" dateTime={now.toISOString()}>
+                  {new Intl.DateTimeFormat(undefined, {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  }).format(now)}
+                </time>
+                <button
+                  type="button"
+                  className="dashboard-header-primary"
+                  onClick={() => setIsCreateOrderOpen(true)}
+                >
+                  <MdOutlineRoomService /> New order
+                </button>
+              </div>
+            </header>
 
             {isError && !errorDismissed && (
               <div className="dashboard-error-banner">
@@ -261,11 +278,13 @@ const Home = () => {
               </div>
             )}
 
-            {/* Plan usage bar — shown only on Starter, hidden on Pro/Enterprise */}
-            <PlanUsageBar />
+            <section className="dashboard-onboarding-stack">
+              {/* Plan usage bar — shown only on Starter, hidden on Pro/Enterprise */}
+              <PlanUsageBar />
 
-            {/* Zeigarnik setup checklist — shown until owner completes all steps */}
-            {user.role === "OWNER" && <SetupChecklist />}
+              {/* Zeigarnik setup checklist — shown until owner completes all steps */}
+              {user.role === "OWNER" && <SetupChecklist />}
+            </section>
 
             <section className="dashboard-metric-grid">
               <MiniCard
@@ -308,81 +327,105 @@ const Home = () => {
               />
             </section>
 
-            {/* Empty state — first day or early morning with 0 orders */}
-            {!isLoading && !isError && (dashboard.ordersToday || 0) === 0 && (
-              <div className="dashboard-zero-state">
-                <span className="dashboard-zero-icon">☀️</span>
-                <strong>Ready for your first order today</strong>
-                <p>Your numbers will appear here once orders start coming in.</p>
-                <button
-                  type="button"
-                  className="dashboard-zero-cta"
-                  onClick={() => setIsCreateOrderOpen(true)}
-                >
-                  <MdOutlineRoomService /> Take first order
-                </button>
-              </div>
-            )}
-
-            <section className="dashboard-primary-grid">
-              <RecentOrders />
-              <PopularDishes
-                dishes={dashboard.popularDishes || []}
-                isLoading={isLoading}
-              />
-            </section>
-
-            <section className="dashboard-secondary-grid">
-              <div className="dashboard-panel dashboard-quick-actions">
-                <div className="dashboard-panel-header">
-                  <div>
-                    <h2>Quick Actions</h2>
-                    <p>Common restaurant tasks</p>
+            <section className="dashboard-command-grid">
+              <div className="dashboard-command-main">
+                {!isLoading && !isError && (dashboard.ordersToday || 0) === 0 && (
+                  <div className="dashboard-first-order-callout">
+                    <span className="dashboard-zero-icon">
+                      <MdOutlineRoomService />
+                    </span>
+                    <div>
+                      <strong>Service is ready</strong>
+                      <p>
+                        Start the first order and today&apos;s live numbers will
+                        appear here.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="dashboard-zero-cta"
+                      onClick={() => setIsCreateOrderOpen(true)}
+                    >
+                      Take first order
+                    </button>
                   </div>
-                </div>
-                <div className="dashboard-action-list">
-                  {quickActions.map(
-                    ({ label, description, icon: Icon, action }) => (
-                      <button type="button" key={label} onClick={action}>
+                )}
+                <RecentOrders />
+              </div>
+
+              <aside className="dashboard-operations-rail">
+                <div className="dashboard-panel dashboard-service-pulse">
+                  <div className="dashboard-panel-header">
+                    <div>
+                      <h2>Service pulse</h2>
+                      <p>What needs attention right now</p>
+                    </div>
+                    <span className="dashboard-live-indicator">
+                      <i /> Live
+                    </span>
+                  </div>
+                  <div className="dashboard-glance-list">
+                    {glanceItems.map(({ label, value, icon: Icon, sub }) => (
+                      <div key={label}>
                         <span>
                           <Icon />
                         </span>
                         <div>
-                          <strong>{label}</strong>
-                          <small>{description}</small>
+                          {isLoading ? (
+                            <div
+                              className="dashboard-metric-skeleton"
+                              style={{
+                                height: 18,
+                                width: 60,
+                                margin: "2px 0 6px",
+                              }}
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <strong>{value}</strong>
+                          )}
+                          <small>{label}</small>
+                          {sub && !isLoading && (
+                            <span className="dashboard-glance-sub">{sub}</span>
+                          )}
                         </div>
-                      </button>
-                    ),
-                  )}
-                </div>
-              </div>
-
-              <div className="dashboard-panel dashboard-glance">
-                <div className="dashboard-panel-header">
-                  <div>
-                    <h2>Operational insights</h2>
-                    <p>Live summary — not shown above</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-                <div className="dashboard-glance-list">
-                  {glanceItems.map(({ label, value, icon: Icon, sub }) => (
-                    <div key={label}>
-                      <span>
-                        <Icon />
-                      </span>
-                      <div>
-                        {isLoading ? (
-                          <div className="dashboard-metric-skeleton" style={{ height: 18, width: 60, margin: '2px 0 6px' }} aria-hidden="true" />
-                        ) : (
-                          <strong>{value}</strong>
-                        )}
-                        <small>{label}</small>
-                        {sub && !isLoading && <span className="dashboard-glance-sub">{sub}</span>}
-                      </div>
+
+                <div className="dashboard-panel dashboard-quick-actions">
+                  <div className="dashboard-panel-header">
+                    <div>
+                      <h2>Quick actions</h2>
+                      <p>Move directly to the next task</p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="dashboard-action-list">
+                    {quickActions.map(
+                      ({ label, description, icon: Icon, action }) => (
+                        <button type="button" key={label} onClick={action}>
+                          <span>
+                            <Icon />
+                          </span>
+                          <div>
+                            <strong>{label}</strong>
+                            <small>{description}</small>
+                          </div>
+                        </button>
+                      ),
+                    )}
+                  </div>
                 </div>
-              </div>
+              </aside>
+            </section>
+
+            <section className="dashboard-insight-grid">
+              <PopularDishes
+                dishes={dashboard.popularDishes || []}
+                isLoading={isLoading}
+              />
+              <InventorySignalCard />
             </section>
           </main>
 

@@ -1,42 +1,73 @@
-import { useDispatch, useSelector } from "react-redux";
-import { getMyRestaurant, getUserData } from "../https";
 import { useEffect } from "react";
-import { removeUser, setRestaurant, setUser, setInitialized } from "../redux/slices/userSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { useQuery } from "@tanstack/react-query";
+import { getMyRestaurant, getSession, getUserData } from "../https";
+import {
+  removeUser,
+  setInitialized,
+  setRestaurant,
+  setUser,
+} from "../redux/slices/userSlice";
 
-const useLoadData = () => {
+const useLoadData = ({ enabled = true } = {}) => {
   const dispatch = useDispatch();
   const isInitializing = useSelector((state) => state.user.isInitializing);
+  const bootstrapQuery = useQuery({
+    queryKey: ["auth", "bootstrap"],
+    enabled,
+    staleTime: 30_000,
+    retry: (failureCount, error) => {
+      const status = error?.response?.status;
+      if (status && status < 500) return false;
+      return failureCount < 1;
+    },
+    queryFn: async ({ signal }) => {
+      const sessionResponse = await getSession({ signal });
+      const session = sessionResponse.data;
+      if (!session?.session || !session?.user) return null;
+
+      const contextResponse = await getUserData({ signal });
+      const user = contextResponse.data.data;
+      if (user.role === "SUPER_ADMIN") {
+        return { user, restaurant: null };
+      }
+
+      const restaurantResponse = await getMyRestaurant({ signal });
+      return {
+        user,
+        restaurant: restaurantResponse.data.data,
+      };
+    },
+  });
 
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const contextResponse = await getUserData();
-        const user = contextResponse.data.data;
-        // Dispatch setUser FIRST — then setInitialized in finally.
-        // This guarantees isAuth=true is committed to the store before
-        // isInitializing becomes false, so the router never sees
-        // isInitializing=false + isAuth=false at the same time.
-        dispatch(setUser(user));
+    if (!enabled || bootstrapQuery.isError || !bootstrapQuery.isSuccess) {
+      return;
+    }
 
-        if (user.role !== "SUPER_ADMIN") {
-          const restaurantResponse = await getMyRestaurant();
-          dispatch(setRestaurant(restaurantResponse.data.data));
-        }
-      } catch {
-        // Session invalid or expired — user is not logged in
-        dispatch(removeUser());
-      } finally {
-        // Release the initializing lock AFTER all dispatches are queued.
-        // React batches synchronous dispatches so by the time the router
-        // re-renders, both setUser and setInitialized effects are applied.
-        dispatch(setInitialized());
-      }
-    };
+    if (!bootstrapQuery.data) {
+      dispatch(removeUser());
+      return;
+    }
 
-    fetchUser();
-  }, [dispatch]);
+    dispatch(setUser(bootstrapQuery.data.user));
+    dispatch(setRestaurant(bootstrapQuery.data.restaurant));
+    dispatch(setInitialized());
+  }, [
+    bootstrapQuery.data,
+    bootstrapQuery.isError,
+    bootstrapQuery.isSuccess,
+    dispatch,
+    enabled,
+  ]);
 
-  return isInitializing;
+  return {
+    isLoading:
+      enabled &&
+      (bootstrapQuery.isPending || (isInitializing && !bootstrapQuery.isError)),
+    isError: enabled && bootstrapQuery.isError,
+    refetch: bootstrapQuery.refetch,
+  };
 };
 
 export default useLoadData;

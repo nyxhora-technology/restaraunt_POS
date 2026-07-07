@@ -68,7 +68,7 @@ const NotificationsPanel = ({
             <div 
               className="bg-[#2a2a2a] p-4 rounded-lg cursor-pointer hover:bg-[#333] transition-colors border border-[#02ca3a]/30"
               onClick={() => {
-                navigate("/orders");
+                navigate("/app/orders");
                 onClose();
               }}
             >

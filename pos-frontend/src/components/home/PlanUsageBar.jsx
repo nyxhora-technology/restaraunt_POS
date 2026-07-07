@@ -84,7 +84,7 @@ const PlanUsageBar = () => {
           <button
             type="button"
             className="plan-usage-cta"
-            onClick={() => navigate("/settings")}
+            onClick={() => navigate("/app/settings")}
           >
             <MdRocketLaunch />
             Upgrade <MdArrowForward />

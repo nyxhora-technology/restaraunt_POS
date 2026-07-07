@@ -5,8 +5,8 @@
  */
 const PLAN_FEATURES = {
   STARTER: ["CORE_POS"],
-  PROFESSIONAL: ["CORE_POS", "INVENTORY", "QR_MENU", "STAFF_INVITE", "ANALYTICS_EXTENDED", "EXPORT"],
-  ENTERPRISE: ["CORE_POS", "INVENTORY", "QR_MENU", "STAFF_INVITE", "ANALYTICS_EXTENDED", "EXPORT", "ADVANCED_ANALYTICS"],
+  PROFESSIONAL: ["CORE_POS", "INVENTORY", "QR_MENU", "STAFF_INVITE", "ANALYTICS_EXTENDED", "EXPORT", "RESERVATIONS"],
+  ENTERPRISE: ["CORE_POS", "INVENTORY", "QR_MENU", "STAFF_INVITE", "ANALYTICS_EXTENDED", "EXPORT", "RESERVATIONS", "ADVANCED_ANALYTICS"],
 };
 
 /**
@@ -22,6 +22,7 @@ const PLAN_LIMITS = {
     staff_seats: 3,   // owner counts as 1, so owner + 2 staff
     qr_codes: 0,
     analytics_days: 7,
+    reservations: 0,
   },
   PROFESSIONAL: {
     orders_per_month: null,   // unlimited
@@ -30,6 +31,7 @@ const PLAN_LIMITS = {
     staff_seats: 10,
     qr_codes: 50,
     analytics_days: 90,
+    reservations: null,
   },
   ENTERPRISE: {
     orders_per_month: null,
@@ -38,6 +40,7 @@ const PLAN_LIMITS = {
     staff_seats: null,
     qr_codes: null,
     analytics_days: 365,
+    reservations: null,
   },
 };
 
@@ -53,6 +56,7 @@ const FEATURE_LABELS = {
   STAFF_INVITE: { name: "Staff Invitations", requiredPlan: "PROFESSIONAL" },
   ANALYTICS_EXTENDED: { name: "Extended Analytics", requiredPlan: "PROFESSIONAL" },
   EXPORT: { name: "Data Export", requiredPlan: "PROFESSIONAL" },
+  RESERVATIONS: { name: "Advance Reservations", requiredPlan: "PROFESSIONAL" },
   ADVANCED_ANALYTICS: { name: "Advanced Analytics", requiredPlan: "ENTERPRISE" },
 };
 

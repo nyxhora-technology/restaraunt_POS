@@ -10,7 +10,7 @@ const config = require("./config/config");
 const auth = require("./config/auth");
 const prisma = require("./config/prisma");
 const globalErrorHandler = require("./middlewares/globalErrorHandler");
-const { initSocket } = require("./config/socket");
+const { initSocket, closeSocket } = require("./config/socket");
 const { webHookVerification } = require("./controllers/paymentController");
 const { sanitizeInput } = require("./middlewares/sanitizeInput");
 
@@ -52,6 +52,14 @@ app.use(
   }),
 );
 app.use(cookieParser());
+
+app.get("/api/config/auth", (_req, res) => {
+  res.setHeader("Cache-Control", "public, max-age=300");
+  res.json({
+    success: true,
+    data: { googleEnabled: config.googleAuthEnabled },
+  });
+});
 
 // ── Request correlation ID ─────────────────────────────────────────────────
 // Lets support trace any error report back to a specific request in logs.
@@ -98,6 +106,15 @@ const adminLimiter = rateLimit({
 app.use("/api/auth", authLimiter);
 app.all("/api/auth/*", toNodeHandler(auth));
 
+app.use("/api", apiLimiter);
+app.use("/api", (req, res, next) => {
+  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+    return writeLimiter(req, res, next);
+  }
+  next();
+});
+app.use("/api/admin", adminLimiter);
+
 app.post(
   "/api/payment/webhook",
   express.raw({ type: "application/json", limit: "256kb" }),
@@ -119,9 +136,6 @@ app.use("/api", (req, res, next) => {
   next();
 });
 
-app.use("/api", apiLimiter);
-app.use("/api/admin", adminLimiter);
-
 app.get("/", (_req, res) => {
   res.json({ success: true, message: "Restaurant POS API" });
 });
@@ -136,22 +150,16 @@ app.get("/api/health", async (_req, res, next) => {
 
 app.use("/api/admin",      require("./routes/adminRoute"));
 app.use("/api/restaurant", require("./routes/restaurantRoute"));
+app.use("/api/referral",   require("./routes/referralRoute"));
 app.use("/api/menu",       require("./routes/menuRoute"));
 app.use("/api/order",      require("./routes/orderRoute"));
 app.use("/api/table",      require("./routes/tableRoute"));
 app.use("/api/payment",    require("./routes/paymentRoute"));
 app.use("/api/inventory",  require("./routes/inventoryRoute"));
 app.use("/api/qr",         require("./routes/qrRoute"));
-
-// ── Write limiter — applied after routing so it only fires on write verbs
-// Uses a router-level middleware that checks req.method before rate-limiting.
-// This avoids penalising GET-heavy polling (dashboard, orders list, kitchen).
-app.use("/api", (req, res, next) => {
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
-    return writeLimiter(req, res, next);
-  }
-  next();
-});
+app.use("/api/export",     require("./routes/exportRoute"));
+app.use("/api/analytics",  require("./routes/analyticsRoute"));
+app.use("/api/reservations", require("./routes/reservationRoute"));
 
 app.use((_req, _res, next) => {
   next(Object.assign(new Error("Route not found"), { statusCode: 404 }));
@@ -160,12 +168,51 @@ app.use(globalErrorHandler);
 
 const server = http.createServer(app);
 initSocket(server);
+let shuttingDown = false;
 
 const start = async () => {
   await prisma.$connect();
   server.listen(config.port, () => {
     console.log(`POS API listening on ${config.backendUrl}`);
+    console.log(
+      `Auth configuration: google_provider=${config.googleAuthEnabled ? "enabled" : "disabled"}`,
+    );
   });
+};
+
+const shutdown = (signal) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`${signal} received. Shutting down POS API...`);
+
+  const forceExit = setTimeout(() => {
+    console.error("Graceful shutdown timed out. Forcing exit.");
+    process.exit(1);
+  }, 10000);
+  forceExit.unref();
+
+  Promise.resolve()
+    .then(() => closeSocket())
+    .then(
+      () =>
+        new Promise((resolve) => {
+          server.close((error) => resolve(error));
+        }),
+    )
+    .then(async (error) => {
+      if (error) {
+        console.error("HTTP server close failed:", error);
+        process.exitCode = 1;
+      }
+      await prisma.$disconnect();
+      clearTimeout(forceExit);
+      process.exit(process.exitCode || 0);
+    })
+    .catch((shutdownError) => {
+      console.error("Graceful shutdown failed:", shutdownError);
+      clearTimeout(forceExit);
+      process.exit(1);
+    });
 };
 
 if (require.main === module) {
@@ -177,6 +224,9 @@ if (require.main === module) {
   // ── Process-level crash guards ─────────────────────────────────────────
   // Without these, an unhandled promise rejection silently kills the server
   // in production. PM2 / Docker will restart, but we want a clear log first.
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+
   process.on("unhandledRejection", (reason, promise) => {
     console.error("[unhandledRejection]", reason, "at promise:", promise);
     // Do NOT exit — let it be handled by the next request cycle.

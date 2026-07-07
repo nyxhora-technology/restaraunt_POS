@@ -14,6 +14,7 @@ import useRole from "../../hooks/useRole";
 import DiningAreaModal from "../tables/DiningAreaModal";
 import TableFormModal from "../tables/TableFormModal";
 import TableStatusBadge from "../tables/TableStatusBadge";
+import PlanLimitBadge from "../shared/PlanLimitBadge";
 import {
   CLIMATE_LABELS,
   EXPERIENCE_LABELS,
@@ -116,7 +117,10 @@ const TableManagement = () => {
       <section className="dashboard-table-management-header">
         <div>
           <p className="dashboard-eyebrow">Restaurant layout</p>
-          <h2>Dining areas & tables</h2>
+          <div className="flex items-center gap-3">
+            <h2>Dining areas & tables</h2>
+            <PlanLimitBadge resource="tables" warnAt={3} />
+          </div>
           <p>
             Organize service by AC, Non-AC, VIP, private rooms or any layout
             your restaurant uses.

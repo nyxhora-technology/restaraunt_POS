@@ -191,11 +191,11 @@ const DashboardTopbar = ({
                 <strong>{user.name || "User"}</strong>
                 <span>{user.email}</span>
               </div>
-              <button type="button" onClick={() => goTo("/settings")}>
+              <button type="button" onClick={() => goTo("/app/settings")}>
                 <MdOutlineSettings /> Settings
               </button>
               {isManagement && (
-                <button type="button" onClick={() => goTo("/dashboard")}>
+                <button type="button" onClick={() => goTo("/app/dashboard")}>
                   <MdOutlineAdminPanelSettings /> Admin Workspace
                 </button>
               )}

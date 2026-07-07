@@ -1,6 +1,7 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { ROLES } from "../../constants/roles";
+import { APP_ROUTES, getAuthRoute } from "../../utils/authRouting";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -10,10 +11,12 @@ import { ROLES } from "../../constants/roles";
  * Determine the correct landing route for a given user after login.
  */
 export const getHomeRoute = (user) => {
-  if (user.role === ROLES.SUPER_ADMIN) return "/platform";
+  if (user.role === ROLES.SUPER_ADMIN) return APP_ROUTES.platform;
   if (!user.restaurant || user.restaurant.status !== "APPROVED")
-    return "/onboarding";
-  return ["OWNER", "MANAGER"].includes(user.role) ? "/" : "/dashboard";
+    return APP_ROUTES.onboarding;
+  return ["OWNER", "MANAGER"].includes(user.role)
+    ? APP_ROUTES.home
+    : APP_ROUTES.dashboard;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,8 +30,9 @@ export const getHomeRoute = (user) => {
  */
 export function ProtectedRoute({ children }) {
   const { isAuth, isInitializing } = useSelector((state) => state.user);
-  if (isInitializing) return null;  // wait — don't redirect yet
-  if (!isAuth) return <Navigate to="/auth" replace />;
+  const location = useLocation();
+  if (isInitializing) return null; // wait — don't redirect yet
+  if (!isAuth) return <Navigate to={getAuthRoute(location)} replace />;
   return children;
 }
 
@@ -43,12 +47,14 @@ export function ProtectedRoute({ children }) {
  */
 export function TenantRoute({ children }) {
   const user = useSelector((state) => state.user);
+  const location = useLocation();
 
-  if (user.isInitializing) return null;  // wait — don't redirect yet
-  if (!user.isAuth) return <Navigate to="/auth" replace />;
-  if (user.role === ROLES.SUPER_ADMIN) return <Navigate to="/platform" replace />;
+  if (user.isInitializing) return null; // wait — don't redirect yet
+  if (!user.isAuth) return <Navigate to={getAuthRoute(location)} replace />;
+  if (user.role === ROLES.SUPER_ADMIN)
+    return <Navigate to={APP_ROUTES.platform} replace />;
   if (!user.restaurant || user.restaurant.status !== "APPROVED")
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to={APP_ROUTES.onboarding} replace />;
 
   return children;
 }
@@ -70,7 +76,11 @@ export function TenantRoute({ children }) {
  *   <AdminPage />
  * </RoleRoute>
  */
-export function RoleRoute({ allowedRoles, redirectTo = "/dashboard", children }) {
+export function RoleRoute({
+  allowedRoles,
+  redirectTo = APP_ROUTES.dashboard,
+  children,
+}) {
   const role = useSelector((state) => state.user.role);
 
   return (

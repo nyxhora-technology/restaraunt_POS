@@ -1,0 +1,525 @@
+/* ─── Walkthrough — matches dashboard design tokens ─── */
+
+/* Overlay */
+.walkthrough-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+}
+
+.walkthrough-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: auto;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+/* Spotlight ring — transparent cutout, just the border glow */
+.walkthrough-spotlight {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  border-radius: 10px;
+  border: 3px solid var(--dash-primary, #0f9fa4);
+  box-shadow: 0 0 16px 3px rgba(15, 159, 164, 0.25);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-dark .walkthrough-spotlight {
+  border-color: var(--dash-primary, #35c0c3);
+  box-shadow: 0 0 16px 3px rgba(53, 192, 195, 0.25);
+}
+
+.walkthrough-spotlight::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 14px;
+  border: 2px solid var(--dash-primary, #0f9fa4);
+  opacity: 0.3;
+  animation: walkthrough-ring-pulse 2s ease-in-out infinite;
+}
+
+.theme-dark .walkthrough-spotlight::after {
+  border-color: var(--dash-primary, #35c0c3);
+}
+
+@keyframes walkthrough-ring-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50%      { opacity: 0.1; transform: scale(1.015); }
+}
+
+/* ─── Tooltip ─── */
+.walkthrough-tooltip {
+  position: fixed;
+  z-index: 10000;
+  width: 370px;
+  max-width: calc(100vw - 32px);
+  border-radius: 14px;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  overflow: hidden;
+}
+
+/* Light: match .dashboard-shell light tokens */
+.walkthrough-tooltip.theme-light {
+  background: var(--dash-surface, #ffffff);
+  color: var(--dash-text, #162033);
+  border: 1px solid var(--dash-border, #e3e8ed);
+  box-shadow: var(--dash-shadow, 0 12px 30px #0000000b);
+}
+
+/* Dark: match .dashboard-shell dark tokens */
+.walkthrough-tooltip.theme-dark {
+  background: var(--dash-surface, #181e22);
+  color: var(--dash-text, #f4f7f8);
+  border: 1px solid var(--dash-border, #2c363c);
+  box-shadow: var(--dash-shadow, 0 2px 10px rgba(0, 0, 0, 0.22));
+}
+
+/* ─── Header ─── */
+.walkthrough-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 0;
+}
+
+.walkthrough-step-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.walkthrough-step-number {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1;
+  background: var(--dash-primary-soft, #e2f5f4);
+  color: var(--dash-primary-strong, #087f84);
+}
+
+.theme-dark .walkthrough-step-number {
+  background: var(--dash-primary-soft, #153a3c);
+  color: var(--dash-primary, #35c0c3);
+}
+
+.walkthrough-step-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.walkthrough-section-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dash-muted, #6d7687);
+}
+
+.walkthrough-step-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 750;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+
+.walkthrough-close-btn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid var(--dash-border, #e3e8ed);
+  border-radius: 8px;
+  background: var(--dash-surface-muted, #f2f6f7);
+  color: var(--dash-muted, #6d7687);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  font-size: 16px;
+  padding: 0;
+}
+
+.walkthrough-close-btn:hover {
+  background: var(--dash-primary-soft, #e2f5f4);
+  color: var(--dash-primary-strong, #087f84);
+  border-color: color-mix(in srgb, var(--dash-primary, #0f9fa4) 45%, var(--dash-border, #e3e8ed));
+}
+
+.theme-dark .walkthrough-close-btn {
+  background: var(--dash-surface-muted, #20282d);
+  border-color: var(--dash-border, #2c363c);
+  color: var(--dash-muted, #9aa7ae);
+}
+
+.theme-dark .walkthrough-close-btn:hover {
+  background: var(--dash-primary-soft, #153a3c);
+  color: var(--dash-primary, #35c0c3);
+  border-color: color-mix(in srgb, var(--dash-primary, #35c0c3) 45%, var(--dash-border, #2c363c));
+}
+
+/* ─── Body ─── */
+.walkthrough-body {
+  padding: 14px 20px 0;
+}
+
+.walkthrough-description {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.65;
+  color: var(--dash-muted, #6d7687);
+}
+
+.theme-dark .walkthrough-description {
+  color: var(--dash-muted, #9aa7ae);
+}
+
+/* ─── Footer ─── */
+.walkthrough-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 20px 18px;
+}
+
+/* Progress dots */
+.walkthrough-progress {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.walkthrough-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  transition: all 0.25s ease;
+  background: var(--dash-border, #e3e8ed);
+}
+
+.theme-dark .walkthrough-dot {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.walkthrough-dot.visited {
+  background: var(--dash-primary, #0f9fa4);
+  opacity: 0.5;
+}
+
+.walkthrough-dot.active {
+  width: 20px;
+  border-radius: 4px;
+  background: var(--dash-primary, #0f9fa4);
+  opacity: 1;
+}
+
+/* Nav */
+.walkthrough-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.walkthrough-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.walkthrough-btn:active {
+  transform: scale(0.97);
+}
+
+/* Back button — ghost style like .onboarding-back */
+.walkthrough-btn-back {
+  border: 1px solid var(--dash-border, #e3e8ed);
+  background: transparent;
+  color: var(--dash-muted, #6d7687);
+}
+
+.walkthrough-btn-back:hover {
+  border-color: color-mix(in srgb, var(--dash-primary, #0f9fa4) 45%, var(--dash-border, #e3e8ed));
+  color: var(--dash-primary-strong, #087f84);
+  background: var(--dash-primary-soft, #e2f5f4);
+}
+
+.theme-dark .walkthrough-btn-back {
+  border-color: var(--dash-border, #2c363c);
+  color: var(--dash-muted, #9aa7ae);
+}
+
+.theme-dark .walkthrough-btn-back:hover {
+  border-color: color-mix(in srgb, var(--dash-primary, #35c0c3) 45%, var(--dash-border, #2c363c));
+  color: var(--dash-primary, #35c0c3);
+  background: var(--dash-primary-soft, #153a3c);
+}
+
+/* Next button — primary like .dashboard-create-order */
+.walkthrough-btn-next {
+  background: var(--dash-primary, #0f9fa4);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(15, 159, 164, 0.22);
+}
+
+.walkthrough-btn-next:hover {
+  background: var(--dash-primary-strong, #087f84);
+  transform: translateY(-1px);
+}
+
+.theme-dark .walkthrough-btn-next {
+  background: var(--dash-primary, #35c0c3);
+  color: #071011;
+  box-shadow: 0 6px 16px rgba(53, 192, 195, 0.22);
+}
+
+.theme-dark .walkthrough-btn-next:hover {
+  background: var(--dash-primary-strong, #6dd7d9);
+}
+
+/* Finish state — success green */
+.walkthrough-btn-next.finish {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.22);
+}
+
+.walkthrough-btn-next.finish:hover {
+  background: #059669;
+}
+
+/* Autoplay indicator */
+.walkthrough-autoplay-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--dash-muted, #6d7687);
+}
+
+.theme-dark .walkthrough-autoplay-indicator {
+  color: var(--dash-muted, #9aa7ae);
+}
+
+.walkthrough-autoplay-pause {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--dash-border, #e3e8ed);
+  background: var(--dash-surface-muted, #f2f6f7);
+  color: var(--dash-muted, #6d7687);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 150ms ease, color 150ms ease;
+  padding: 0;
+}
+
+.walkthrough-autoplay-pause:hover {
+  background: var(--dash-primary-soft, #e2f5f4);
+  color: var(--dash-primary-strong, #087f84);
+}
+
+.theme-dark .walkthrough-autoplay-pause {
+  background: var(--dash-surface-muted, #20282d);
+  border-color: var(--dash-border, #2c363c);
+  color: var(--dash-muted, #9aa7ae);
+}
+
+.theme-dark .walkthrough-autoplay-pause:hover {
+  background: var(--dash-primary-soft, #153a3c);
+  color: var(--dash-primary, #35c0c3);
+}
+
+/* ─── Arrow ─── */
+.walkthrough-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  transform: rotate(45deg);
+  z-index: -1;
+}
+
+.walkthrough-tooltip.theme-light .walkthrough-arrow {
+  background: #ffffff;
+  border-color: #e3e8ed;
+}
+
+.walkthrough-tooltip.theme-dark .walkthrough-arrow {
+  background: #181e22;
+  border-color: #2c363c;
+}
+
+.walkthrough-arrow.arrow-left {
+  left: -7px;
+  top: 50%;
+  margin-top: -6px;
+  border-right: none !important;
+  border-bottom: none !important;
+}
+
+.walkthrough-arrow.arrow-right {
+  right: -7px;
+  top: 50%;
+  margin-top: -6px;
+  border-left: none !important;
+  border-bottom: none !important;
+}
+
+.walkthrough-arrow.arrow-top {
+  top: -7px;
+  left: 50%;
+  margin-left: -6px;
+  border-left: none !important;
+  border-top: none !important;
+}
+
+.walkthrough-arrow.arrow-bottom {
+  bottom: -7px;
+  left: 50%;
+  margin-left: -6px;
+  border-right: none !important;
+  border-top: none !important;
+}
+
+/* ─── Skip button ─── */
+.walkthrough-skip {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 10001;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.65);
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.walkthrough-skip:hover {
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ─── Mobile bottom sheet ─── */
+@media (max-width: 768px) {
+  .walkthrough-tooltip {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .walkthrough-arrow {
+    display: none;
+  }
+
+  .walkthrough-header {
+    padding: 18px 18px 0;
+  }
+
+  .walkthrough-body {
+    padding: 12px 18px 0;
+  }
+
+  .walkthrough-footer {
+    padding: 14px 18px 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .walkthrough-progress {
+    justify-content: center;
+  }
+
+  .walkthrough-nav {
+    justify-content: flex-end;
+  }
+
+  .walkthrough-skip {
+    top: 12px;
+    right: 12px;
+    padding: 7px 14px;
+    font-size: 11px;
+  }
+
+  .walkthrough-spotlight {
+    border-radius: 8px;
+  }
+}
+
+/* ─── Replay button (topbar) ─── */
+.dashboard-replay-tour {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--dash-border, #e3e8ed);
+  background: var(--dash-surface, #ffffff);
+  color: var(--dash-muted, #6d7687);
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  white-space: nowrap;
+}
+
+.dashboard-replay-tour:hover {
+  border-color: color-mix(in srgb, var(--dash-primary, #0f9fa4) 45%, var(--dash-border, #e3e8ed));
+  background: var(--dash-primary-soft, #e2f5f4);
+  color: var(--dash-primary-strong, #087f84);
+}
+
+.dashboard-replay-tour svg {
+  width: 14px;
+  height: 14px;
+}
+
+.theme-dark .dashboard-replay-tour {
+  border-color: var(--dash-border, #2c363c);
+  background: var(--dash-surface, #181e22);
+  color: var(--dash-muted, #9aa7ae);
+}
+
+.theme-dark .dashboard-replay-tour:hover {
+  border-color: color-mix(in srgb, var(--dash-primary, #35c0c3) 45%, var(--dash-border, #2c363c));
+  background: var(--dash-primary-soft, #153a3c);
+  color: var(--dash-primary, #35c0c3);
+}

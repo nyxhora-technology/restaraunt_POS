@@ -4,7 +4,7 @@ const prisma = require("./prisma");
 const config = require("./config");
 
 const socialProviders =
-  config.googleClientId && config.googleClientSecret
+  config.googleAuthEnabled
     ? {
         google: {
           clientId: config.googleClientId,
@@ -27,6 +27,17 @@ const auth = betterAuth({
     autoSignIn: true,
     minPasswordLength: 8,
     maxPasswordLength: 128,
+  },
+  account: {
+    accountLinking: {
+      // Allow Google sign-in to link to an existing email/password account
+      // automatically. Without this, users who registered with email/password
+      // get `account_not_linked` when they try Google OAuth with the same email.
+      enabled: true,
+      trustedProviders: ["google"],
+      // Set to false because email/password signups might not have verified emails
+      requireLocalEmailVerified: false,
+    },
   },
   user: {
     additionalFields: {

@@ -291,6 +291,12 @@ const QrMenu = () => {
               <p>Please let your waiter know. We will be happy to assist.</p>
             </div>
           </footer>
+          {restaurant?.plan === "STARTER" && (
+            <a className="qr-powered-banner" href="/" target="_blank" rel="noreferrer">
+              <span>Powered by <strong>Restro</strong></span>
+              <em>Create your own digital menu →</em>
+            </a>
+          )}
         </section>
       </main>
 

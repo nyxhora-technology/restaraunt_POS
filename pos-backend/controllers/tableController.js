@@ -5,6 +5,11 @@ const { writeAudit } = require("../utils/audit");
 
 const tableInclude = {
   area: true,
+  reservations: {
+    where: { reservedAt: { gte: new Date() } },
+    orderBy: { reservedAt: "asc" },
+    take: 1,
+  },
   currentOrder: {
     select: {
       id: true,

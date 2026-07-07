@@ -1,8 +1,6 @@
 const prisma = require("../config/prisma");
 const createHttpError = require("http-errors");
 const { writeAudit } = require("../utils/audit");
-const config = require("../config/config");
-const { planAllowsFeature } = require("../config/planFeatures");
 
 // ─── Public (no auth) ────────────────────────────────────────────────────────
 
@@ -44,13 +42,6 @@ const getPublicMenu = async (req, res, next) => {
     if (qr.restaurant.status !== "APPROVED") {
       throw createHttpError(404, "Menu not found");
     }
-    if (
-      !config.devUnlockFeatures &&
-      !planAllowsFeature(qr.restaurant.plan, "QR_MENU")
-    ) {
-      throw createHttpError(403, "QR menu requires the Professional plan");
-    }
-
     // Increment scan count (fire-and-forget)
     prisma.qrCode
       .update({ where: { id: qr.id }, data: { scanCount: { increment: 1 } } })
@@ -94,6 +85,7 @@ const getPublicMenu = async (req, res, next) => {
       description: qr.restaurant.description,
       city: qr.restaurant.city,
       currency: qr.restaurant.currency,
+      plan: qr.restaurant.plan,
     };
 
     res.set("Cache-Control", "public, max-age=30, stale-while-revalidate=60");

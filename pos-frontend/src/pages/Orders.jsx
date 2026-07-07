@@ -1,24 +1,62 @@
-import React, { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
-import OrderCard from "../components/orders/OrderCard";
-import BackButton from "../components/shared/BackButton";
+import React, { useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { getOrders } from "../https/index";
 import { enqueueSnackbar } from "notistack";
+import {
+  MdCheckCircleOutline,
+  MdDownload,
+  MdLockOutline,
+  MdOutlineAccessTime,
+  MdOutlineReceiptLong,
+  MdSearch,
+  MdTaskAlt,
+} from "react-icons/md";
+import OrderCard from "../components/orders/OrderCard";
 import OrderDetailsModal from "../components/orders/OrderDetailsModal";
+import { getOrderTableLabel } from "../components/tables/tableOptions";
 import useDashboardPreferences from "../hooks/useDashboardPreferences";
+import useFeature from "../hooks/useFeature";
+import { exportOrders, getOrders } from "../https";
+
+const saveDownload = (response, fallbackName) => {
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download =
+    response.headers["content-disposition"]?.match(/filename="([^"]+)"/)?.[1] ||
+    fallbackName;
+  link.click();
+  URL.revokeObjectURL(url);
+};
 
 const Orders = () => {
   const [status, setStatus] = useState("all");
   const [timeline, setTimeline] = useState("3hours");
+  const [search, setSearch] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
   const { theme } = useDashboardPreferences();
+  const { hasExport, plan } = useFeature();
+  const analyticsDays =
+    plan === "STARTER" ? 7 : plan === "PROFESSIONAL" ? 90 : 365;
+  const availableTimelines = [
+    ["all", "All time", plan !== "ENTERPRISE"],
+    ["plan", `Last ${analyticsDays} days`, false],
+    ["3hours", "Last 3 hours", false],
+    ["today", "Today", false],
+    ["yesterday", "Yesterday", false],
+    ["thisWeek", "This week", false],
+  ];
 
   const getTimelineParams = () => {
     if (timeline === "all") return {};
     const now = new Date();
-    let from, to;
-    if (timeline === "3hours") {
+    let from;
+    let to;
+    if (timeline === "plan") {
+      from = new Date(
+        now.getTime() - analyticsDays * 24 * 60 * 60 * 1000,
+      ).toISOString();
+      to = now.toISOString();
+    } else if (timeline === "3hours") {
       from = new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString();
       to = now.toISOString();
     } else if (timeline === "today") {
@@ -36,7 +74,7 @@ const Orders = () => {
       to = end.toISOString();
     } else if (timeline === "thisWeek") {
       const start = new Date(now);
-      start.setDate(start.getDate() - start.getDay()); // Sunday
+      start.setDate(start.getDate() - start.getDay());
       start.setHours(0, 0, 0, 0);
       from = start.toISOString();
       to = now.toISOString();
@@ -44,120 +82,268 @@ const Orders = () => {
     return { from, to };
   };
 
+  const handleExport = async () => {
+    if (!hasExport) {
+      enqueueSnackbar("CSV export is included with Professional.", {
+        variant: "info",
+      });
+      return;
+    }
+    try {
+      saveDownload(
+        await exportOrders(getTimelineParams()),
+        `orders-${new Date().toISOString().slice(0, 10)}.csv`,
+      );
+    } catch {
+      enqueueSnackbar("Order export could not be generated.", {
+        variant: "error",
+      });
+    }
+  };
+
   useEffect(() => {
-    // title set via Helmet
     document.documentElement.style.colorScheme = theme;
     return () => {
       document.documentElement.style.removeProperty("color-scheme");
     };
   }, [theme]);
 
-  const { data: resData, isError } = useQuery({
+  const {
+    data: resData,
+    isError,
+    isLoading,
+  } = useQuery({
     queryKey: ["orders", timeline],
-    queryFn: async () => {
-      return await getOrders(getTimelineParams());
-    },
+    queryFn: () => getOrders(getTimelineParams()),
     placeholderData: keepPreviousData,
   });
 
-  if (isError) {
-    enqueueSnackbar("Something went wrong!", { variant: "error" });
-  }
-  const orders = resData?.data.data || [];
-  const filteredOrders = orders.filter((order) => {
-    if (status === "progress") {
-      return ["PENDING", "ACCEPTED", "PREPARING"].includes(order.orderStatus);
+  useEffect(() => {
+    if (isError) {
+      enqueueSnackbar("Orders could not be loaded.", { variant: "error" });
     }
-    if (status === "ready") return order.orderStatus === "READY";
-    if (status === "completed") return order.orderStatus === "COMPLETED";
-    return true;
-  });
+  }, [isError]);
+
+  const orders = useMemo(() => resData?.data.data || [], [resData]);
+  const statusCounts = useMemo(
+    () => ({
+      active: orders.filter((order) =>
+        ["PENDING", "ACCEPTED", "PREPARING"].includes(order.orderStatus),
+      ).length,
+      ready: orders.filter((order) => order.orderStatus === "READY").length,
+      completed: orders.filter((order) => order.orderStatus === "COMPLETED")
+        .length,
+    }),
+    [orders],
+  );
+
+  const filteredOrders = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return orders.filter((order) => {
+      const matchesStatus =
+        status === "all" ||
+        (status === "progress" &&
+          ["PENDING", "ACCEPTED", "PREPARING"].includes(order.orderStatus)) ||
+        (status === "ready" && order.orderStatus === "READY") ||
+        (status === "completed" && order.orderStatus === "COMPLETED");
+      if (!matchesStatus) return false;
+      if (!query) return true;
+      return [
+        order.orderNo,
+        order.customerName,
+        order.customerPhone,
+        order.orderType,
+        order.orderStatus,
+        getOrderTableLabel(order, ""),
+      ].some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(query),
+      );
+    });
+  }, [orders, search, status]);
+
+  const summary = [
+    {
+      label: "Orders in view",
+      value: orders.length,
+      note: `Current ${timeline === "3hours" ? "3-hour" : "time"} window`,
+      icon: MdOutlineReceiptLong,
+    },
+    {
+      label: "In progress",
+      value: statusCounts.active,
+      note: "Pending or in the kitchen",
+      icon: MdOutlineAccessTime,
+    },
+    {
+      label: "Ready",
+      value: statusCounts.ready,
+      note: "Waiting to be served",
+      icon: MdTaskAlt,
+    },
+    {
+      label: "Completed",
+      value: statusCounts.completed,
+      note: "Closed in this window",
+      icon: MdCheckCircleOutline,
+    },
+  ];
 
   return (
     <section
-      className={`dashboard-shell theme-${theme} flex h-[calc(100vh-5rem)] min-h-0 flex-col overflow-hidden`}
+      className={`dashboard-shell theme-${theme} operations-page orders-workspace-page`}
     >
-      <div className="flex flex-col gap-4 px-10 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <BackButton />
-            <h1 className="text-[var(--dash-text)] text-2xl font-bold tracking-wide">
-              Orders
-            </h1>
-          </div>
-          <div className="dashboard-filter-group">
-            <button
-              onClick={() => setStatus("all")}
-              className={`dashboard-filter-button ${
-                status === "all" ? "is-active" : ""
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setStatus("progress")}
-              className={`dashboard-filter-button ${
-                status === "progress" ? "is-active" : ""
-              }`}
-            >
-              In Progress
-            </button>
-            <button
-              onClick={() => setStatus("ready")}
-              className={`dashboard-filter-button ${
-                status === "ready" ? "is-active" : ""
-              }`}
-            >
-              Ready
-            </button>
-            <button
-              onClick={() => setStatus("completed")}
-              className={`dashboard-filter-button ${
-                status === "completed" ? "is-active" : ""
-              }`}
-            >
-              Completed
-            </button>
-          </div>
-        </div>
-
-        <div className="dashboard-time-filter">
-          <span>Timeline:</span>
-          {[
-            ["all", "All Time"],
-            ["3hours", "Last 3 Hours"],
-            ["today", "Today"],
-            ["yesterday", "Yesterday"],
-            ["thisWeek", "This Week"],
-          ].map(([value, label]) => (
-            <button
-              key={value}
-              onClick={() => setTimeline(value)}
-              className={timeline === value ? "is-active" : ""}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="scrollbar-hide grid min-h-0 flex-1 grid-cols-3 content-start gap-3 overflow-y-auto px-16 py-4">
-        {filteredOrders.length > 0 ? (
-          filteredOrders.map((order) => {
-            return (
-              <OrderCard
-                key={order.id}
-                order={order}
-                onClick={() => setSelectedOrder(order)}
-              />
-            );
-          })
-        ) : (
-          <p className="col-span-3 text-[var(--dash-muted)]">
-            No orders available
+      <header className="analytics-header operations-page-header">
+        <div>
+          <p className="analytics-eyebrow">Order operations</p>
+          <h1>Orders</h1>
+          <p>
+            Find active tickets, follow kitchen progress, and review completed
+            service.
           </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleExport}
+          className={`pro-action-button ${!hasExport ? "is-locked" : ""}`}
+          title={
+            !hasExport
+              ? "CSV export requires Professional"
+              : "Export visible orders to CSV"
+          }
+        >
+          {hasExport ? <MdDownload /> : <MdLockOutline />}
+          Export CSV
+          {!hasExport && <span>PRO</span>}
+        </button>
+      </header>
+
+      <section className="operations-summary-grid" aria-label="Order summary">
+        {summary.map(({ label, value, note, icon: Icon }) => (
+          <article key={label}>
+            <div>
+              <span>{label}</span>
+              <strong>{isLoading ? "—" : value}</strong>
+              <small>{note}</small>
+            </div>
+            <i>
+              <Icon />
+            </i>
+          </article>
+        ))}
+      </section>
+
+      <section className="orders-control-panel">
+        <div className="orders-control-primary">
+          <label className="operations-search">
+            <MdSearch />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search order, customer, phone or table"
+            />
+          </label>
+          <div
+            className="analytics-range orders-status-filter"
+            aria-label="Order status"
+          >
+            {[
+              ["all", "All"],
+              ["progress", "In progress"],
+              ["ready", "Ready"],
+              ["completed", "Completed"],
+            ].map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatus(value)}
+                className={status === value ? "is-active" : ""}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="orders-control-timeline">
+          <div>
+            <strong>History</strong>
+            <small>
+              {analyticsDays}-day access
+              {plan === "STARTER" && " · 90 days with Professional"}
+            </small>
+          </div>
+          <div className="analytics-range orders-timeline-filter">
+            {availableTimelines.map(([value, label, capped]) => (
+              <button
+                key={value}
+                type="button"
+                disabled={capped}
+                onClick={() => setTimeline(value)}
+                className={timeline === value ? "is-active" : ""}
+                title={
+                  capped
+                    ? `Your plan includes ${analyticsDays} days of order history`
+                    : undefined
+                }
+              >
+                {capped && <MdLockOutline />}
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="orders-results-heading">
+        <div>
+          <strong>{filteredOrders.length}</strong>
+          <span>{filteredOrders.length === 1 ? "order" : "orders"}</span>
+        </div>
+        {(search || status !== "all") && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearch("");
+              setStatus("all");
+            }}
+          >
+            Clear filters
+          </button>
         )}
       </div>
+
+      {isLoading && orders.length === 0 ? (
+        <div className="operations-loading-state">Loading orders…</div>
+      ) : filteredOrders.length > 0 ? (
+        <div className="orders-workspace-grid">
+          {filteredOrders.map((order) => (
+            <OrderCard
+              key={order.id}
+              order={order}
+              onClick={() => setSelectedOrder(order)}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="operations-empty-state">
+          <span>
+            <MdOutlineReceiptLong />
+          </span>
+          <h2>
+            {orders.length
+              ? "No orders match these filters"
+              : "No orders in this window"}
+          </h2>
+          <p>
+            {orders.length
+              ? "Try another status, date range, customer, or table."
+              : "New tickets will appear here as soon as service begins."}
+          </p>
+        </div>
+      )}
 
       {selectedOrder && (
         <OrderDetailsModal

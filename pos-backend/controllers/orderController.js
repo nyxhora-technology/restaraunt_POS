@@ -82,7 +82,18 @@ const addOrder = async (req, res, next) => {
               id: { in: requestedTableIds },
               restaurantId: req.restaurantId,
             },
-            include: { area: true },
+            include: {
+              area: true,
+              reservations: {
+                where: {
+                  reservedAt: {
+                    gte: new Date(),
+                    lte: new Date(Date.now() + 2 * 60 * 60 * 1000),
+                  },
+                },
+                take: 1,
+              },
+            },
           })
         : Promise.resolve([]),
       prisma.menuItem.findMany({
@@ -108,6 +119,12 @@ const addOrder = async (req, res, next) => {
       )
     ) {
       throw createHttpError(409, "One or more tables are no longer available");
+    }
+    if (isDineIn && tables.some((table) => table.reservations?.length)) {
+      throw createHttpError(
+        409,
+        "One or more tables have a reservation within the next two hours",
+      );
     }
     if (isDineIn) {
       const totalCapacity = tables.reduce((sum, table) => sum + table.seats, 0);
@@ -302,7 +319,25 @@ const buildOrderWhere = (restaurantId, query) => {
 const getOrders = async (req, res, next) => {
   try {
     const { page, limit, sortBy = "createdAt", sortOrder = "desc" } = req.query;
-    const where = buildOrderWhere(req.restaurantId, req.query);
+    const { getPlanLimit } = require("../config/planFeatures");
+    const analyticsDays = getPlanLimit(
+      req.restaurant?.plan || "STARTER",
+      "analytics_days",
+    );
+    const cappedQuery = { ...req.query };
+    if (analyticsDays !== null) {
+      const earliestAllowed = new Date(
+        Date.now() - analyticsDays * 24 * 60 * 60 * 1000,
+      );
+      if (
+        !cappedQuery.from ||
+        new Date(cappedQuery.from).getTime() < earliestAllowed.getTime()
+      ) {
+        cappedQuery.from = earliestAllowed.toISOString();
+        res.set("X-Analytics-Capped", "true");
+      }
+    }
+    const where = buildOrderWhere(req.restaurantId, cappedQuery);
     const validSortFields = ["createdAt", "totalAmount"];
     const actualSortBy = validSortFields.includes(sortBy) ? sortBy : "createdAt";
     const actualSortOrder = sortOrder === "asc" ? "asc" : "desc";
@@ -754,9 +789,18 @@ const getOrderUsage = async (req, res, next) => {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
-    const ordersThisMonth = await prisma.order.count({
-      where: { restaurantId, createdAt: { gte: startOfMonth, lte: endOfMonth } },
-    });
+    const [ordersThisMonth, menuItems, tables, staffSeats] = await prisma.$transaction([
+      prisma.order.count({
+        where: { restaurantId, createdAt: { gte: startOfMonth, lte: endOfMonth } },
+      }),
+      prisma.menuItem.count({ where: { restaurantId } }),
+      prisma.table.count({ where: { restaurantId, isActive: true } }),
+      prisma.user.count({
+        where: {
+          OR: [{ restaurantId }, { ownedRestaurant: { id: restaurantId } }],
+        },
+      }),
+    ]);
 
     const limit = getPlanLimit(plan, "orders_per_month");
     const percentage = limit ? Math.min(100, Math.round((ordersThisMonth / limit) * 100)) : 0;
@@ -771,6 +815,11 @@ const getOrderUsage = async (req, res, next) => {
         unlimited: limit === null,
         periodStart: startOfMonth,
         periodEnd: endOfMonth,
+        resources: {
+          menu_items: { used: menuItems, limit: getPlanLimit(plan, "menu_items") },
+          tables: { used: tables, limit: getPlanLimit(plan, "tables") },
+          staff_seats: { used: staffSeats, limit: getPlanLimit(plan, "staff_seats") },
+        },
       },
     });
   } catch (error) {

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { IoMdClose } from "react-icons/io";
-import { MdAddShoppingCart, MdDelete, MdSearch } from "react-icons/md";
+import { MdAddShoppingCart, MdDelete, MdLockOutline, MdSearch } from "react-icons/md";
 import { useSelector } from "react-redux";
 import {
   createOrderRazorpay,
@@ -22,6 +22,7 @@ import {
 import Invoice from "../invoice/Invoice";
 import { getOrderTableLabel } from "../tables/tableOptions";
 import useRole from "../../hooks/useRole";
+import useFeature from "../../hooks/useFeature";
 
 const transitions = {
   OWNER: {
@@ -79,6 +80,7 @@ const OrderDetailsModal = ({ order: initialOrder, onClose }) => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptCopyType, setReceiptCopyType] = useState("REPRINT");
   const { role, canHandleOrders: canViewFinance, hasRole } = useRole();
+  const { hasExport } = useFeature();
   const restaurant = useSelector((state) => state.user.restaurant);
   const queryClient = useQueryClient();
   const payable =
@@ -601,12 +603,20 @@ const OrderDetailsModal = ({ order: initialOrder, onClose }) => {
               <button
                 type="button"
                 onClick={() => {
+                  if (!hasExport) {
+                    enqueueSnackbar("Downloadable receipts are included with Professional.", {
+                      variant: "info",
+                    });
+                    return;
+                  }
                   setReceiptCopyType("REPRINT");
                   setShowReceipt(true);
                 }}
-                className="dashboard-secondary-button rounded-lg px-5 py-3 font-semibold"
+                className={`dashboard-secondary-button rounded-lg px-5 py-3 font-semibold ${!hasExport ? "receipt-pro-locked" : ""}`}
               >
-                Reprint Payment Receipt
+                {!hasExport && <MdLockOutline />}
+                Download / Print Receipt
+                {!hasExport && <span>PRO</span>}
               </button>
             </div>
           )}

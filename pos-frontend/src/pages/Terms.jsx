@@ -1,26 +1,29 @@
-import { useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { HiArrowLeft } from "react-icons/hi";
 import logo from "../assets/images/logo.png";
+import {
+  getPublicUrl,
+  seoIndexingEnabled,
+  seoRobots,
+} from "../config/site";
 
 const EFFECTIVE_DATE = "July 4, 2026";
 
 export default function Terms() {
-  useEffect(() => {
-    document.title = "Terms of Service | Restro";
-    const description = document.querySelector('meta[name="description"]');
-    const previous = description?.content;
-    if (description) {
-      description.content =
-        "Read the terms that govern your use of the Restro restaurant operations platform.";
-    }
-    return () => {
-      if (description && previous) description.content = previous;
-    };
-  }, []);
-
   return (
     <main className="legal-page">
+      <Helmet>
+        <title>Terms of Service | Restro</title>
+        <meta
+          name="description"
+          content="Read the terms that govern your use of the Restro restaurant operations platform."
+        />
+        <meta name="robots" content={seoRobots} />
+        {seoIndexingEnabled && (
+          <link rel="canonical" href={getPublicUrl("/terms")} />
+        )}
+      </Helmet>
       <nav className="legal-nav">
         <Link className="marketing-brand" to="/">
           <img src={logo} alt="" />

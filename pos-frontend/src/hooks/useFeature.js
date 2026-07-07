@@ -2,8 +2,25 @@ import { useSelector } from "react-redux";
 
 const PLAN_FEATURES = {
   STARTER: ["CORE_POS"],
-  PROFESSIONAL: ["CORE_POS", "INVENTORY", "QR_MENU"],
-  ENTERPRISE: ["CORE_POS", "INVENTORY", "QR_MENU", "ADVANCED_ANALYTICS"],
+  PROFESSIONAL: [
+    "CORE_POS",
+    "INVENTORY",
+    "QR_MENU",
+    "STAFF_INVITE",
+    "ANALYTICS_EXTENDED",
+    "EXPORT",
+    "RESERVATIONS",
+  ],
+  ENTERPRISE: [
+    "CORE_POS",
+    "INVENTORY",
+    "QR_MENU",
+    "STAFF_INVITE",
+    "ANALYTICS_EXTENDED",
+    "EXPORT",
+    "RESERVATIONS",
+    "ADVANCED_ANALYTICS",
+  ],
 };
 
 const PLAN_LABELS = {
@@ -31,6 +48,9 @@ const useFeature = () => {
     planColor: PLAN_LABELS[plan]?.color || "#6b7280",
     hasInventory: hasFeature("INVENTORY"),
     hasQrMenu: hasFeature("QR_MENU"),
+    hasExport: hasFeature("EXPORT"),
+    hasAnalytics: hasFeature("ANALYTICS_EXTENDED"),
+    hasReservations: hasFeature("RESERVATIONS"),
     hasFeature,
     devUnlockFeatures: DEV_UNLOCK_FEATURES,
     PLAN_LABELS,

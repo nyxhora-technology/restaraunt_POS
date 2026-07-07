@@ -88,7 +88,7 @@ const CreateOrderModal = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    if (location.state?.retainCart || location.pathname === "/menu") {
+    if (location.state?.retainCart || location.pathname === "/app/menu") {
       setGuestCount(customerData.guests || defaultGuestCount);
       setName(customerData.customerName || "");
       setPhone(customerData.customerPhone?.replace("+91", "") || "");
@@ -116,7 +116,7 @@ const CreateOrderModal = ({
   };
 
   const handleCancel = () => {
-    if (!location.state?.retainCart && location.pathname !== "/menu") {
+    if (!location.state?.retainCart && location.pathname !== "/app/menu") {
       resetForm();
       dispatch(removeCustomer());
       dispatch(removeAllItems());
@@ -161,10 +161,10 @@ const CreateOrderModal = ({
     );
     onClose();
     if (isTableFirst) {
-      navigate("/menu", { state: { orderFlow: "ACTIVE" } });
+      navigate("/app/menu", { state: { orderFlow: "ACTIVE" } });
       return;
     }
-    navigate(orderType === "DINE_IN" ? "/tables" : "/menu", {
+    navigate(orderType === "DINE_IN" ? "/app/tables" : "/app/menu", {
       state: {
         orderFlow: orderType === "DINE_IN" ? "DETAILS_FIRST" : "ACTIVE",
       },

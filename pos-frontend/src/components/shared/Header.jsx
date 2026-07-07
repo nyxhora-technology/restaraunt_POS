@@ -20,22 +20,21 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import useRole from "../../hooks/useRole";
 import useDashboardPreferences from "../../hooks/useDashboardPreferences";
+import { APP_ROUTES } from "../../utils/authRouting";
 
 const navItems = [
-  { label: "Dashboard", path: "/dashboard", icon: MdDashboard },
-  { label: "Tables", path: "/tables", aliases: ["/table"], icon: MdTableBar },
-  { label: "Menu", path: "/menu", icon: MdOutlineMenuBook },
-  { label: "QR", path: "/qr", icon: MdQrCode2 },
+  { label: "Dashboard", path: APP_ROUTES.dashboard, icon: MdDashboard },
+  { label: "Tables", path: APP_ROUTES.tables, icon: MdTableBar },
+  { label: "Menu", path: APP_ROUTES.menu, icon: MdOutlineMenuBook },
+  { label: "QR", path: APP_ROUTES.qr, icon: MdQrCode2 },
   {
     label: "Inventory",
-    path: "/inventory",
-    aliases: ["/inventry"],
+    path: APP_ROUTES.inventory,
     icon: MdInventory2,
   },
   {
     label: "Settings",
-    path: "/settings",
-    aliases: ["/setting"],
+    path: APP_ROUTES.settings,
     icon: MdOutlineSettings,
   },
 ];
@@ -62,10 +61,10 @@ const Header = () => {
   };
   const { isSuperAdmin, isManagement } = useRole();
   const homeRoute = isSuperAdmin
-    ? "/platform"
+    ? APP_ROUTES.platform
     : isManagement
-      ? "/"
-      : "/dashboard";
+      ? APP_ROUTES.home
+      : APP_ROUTES.dashboard;
 
   return (
     <header className={`common-header theme-${theme}`}>
@@ -88,9 +87,9 @@ const Header = () => {
             {isSuperAdmin ? (
               <button
                 type="button"
-                onClick={() => navigate("/platform")}
+                onClick={() => navigate(APP_ROUTES.platform)}
                 className={`common-header-icon-button ${
-                  location.pathname === "/platform" ? "is-active" : ""
+                  location.pathname === APP_ROUTES.platform ? "is-active" : ""
                 }`}
                 title="Platform"
                 aria-label="Platform"
@@ -134,7 +133,7 @@ const Header = () => {
           <FaBell />
         </button>
         <div
-          onClick={() => navigate("/settings")}
+          onClick={() => navigate(APP_ROUTES.settings)}
           className="common-header-user"
         >
           <FaUserCircle className="common-header-avatar" />

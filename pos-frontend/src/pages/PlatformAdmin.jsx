@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { Helmet } from "react-helmet-async";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import {
@@ -19,6 +18,8 @@ import {
 import { FaArrowRight, FaRegCalendarAlt } from "react-icons/fa";
 import RestaurantDetailsModal from "../components/admin/RestaurantDetailsModal";
 import { formatDateAndTime } from "../utils";
+import Header from "../components/shared/Header";
+import useDashboardPreferences from "../hooks/useDashboardPreferences";
 
 const statusStyles = {
   PENDING: "bg-[#4a452e] text-yellow-300 border-yellow-700",
@@ -33,10 +34,14 @@ const PlatformAdmin = () => {
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const [statusDialog, setStatusDialog] = useState(null);
   const queryClient = useQueryClient();
+  const { theme } = useDashboardPreferences();
 
   useEffect(() => {
-    // title set via Helmet
-  }, []);
+    document.documentElement.style.colorScheme = theme;
+    return () => {
+      document.documentElement.style.removeProperty("color-scheme");
+    };
+  }, [theme]);
 
   const statsQuery = useQuery({
     queryKey: ["platform-stats"],
@@ -159,55 +164,57 @@ const PlatformAdmin = () => {
   );
 
   return (
-    <section className="min-h-[calc(100vh-5rem)] bg-[#1f1f1f] px-10 py-8 text-[#f5f5f5]">
-      <div className="mb-8 flex items-start justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-yellow-400">
-            Platform Control Center
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold">Restaurant Network</h1>
-          <p className="mt-2 text-sm text-[#ababab]">
-            Review tenants, monitor operations and control platform access.
-          </p>
-        </div>
-        <div className="flex gap-2 rounded-xl bg-[#1a1a1a] p-1">
-          {["Restaurants", "Users"].map((item) => (
-            <button
-              key={item}
-              onClick={() => setTab(item)}
-              className={`rounded-lg px-6 py-3 font-semibold transition ${
-                tab === item
-                  ? "bg-[#333] text-white"
-                  : "text-[#ababab] hover:text-white"
-              }`}
-            >
+    <div className={`dashboard-shell theme-${theme} flex flex-col min-h-screen bg-[var(--dash-bg)] text-[var(--dash-text)]`}>
+      <Header />
+      <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-8 md:px-10">
+        <div className="mb-8 flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.25em] text-[var(--dash-primary)] font-semibold">
+              Platform Control Center
+            </p>
+            <h1 className="mt-2 text-3xl font-bold">Restaurant Network</h1>
+            <p className="mt-2 text-sm text-[var(--dash-muted)]">
+              Review tenants, monitor operations and control platform access.
+            </p>
+          </div>
+          <div className="flex gap-2 rounded-xl bg-[var(--dash-surface-muted)] p-1 border border-[var(--dash-border)]">
+            {["Restaurants", "Users"].map((item) => (
+              <button
+                key={item}
+                onClick={() => setTab(item)}
+                className={`rounded-lg px-6 py-2.5 font-semibold transition-all ${
+                  tab === item
+                    ? "bg-[var(--dash-surface)] text-[var(--dash-primary-strong)] shadow-sm"
+                    : "text-[var(--dash-muted)] hover:text-[var(--dash-text)]"
+                }`}
+              >
               {item}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="mb-8 grid grid-cols-5 gap-4">
+      <div className="mb-8 grid grid-cols-2 md:grid-cols-5 gap-4">
         {[
-          ["Total Restaurants", totalRestaurants, "#025cca"],
-          ["Pending Review", statusCounts.PENDING || 0, "#f6b100"],
-          ["Platform Users", stats?.users || 0, "#5b45b0"],
-          ["Total Orders", stats?.orders || 0, "#285430"],
+          ["Total Restaurants", totalRestaurants, "var(--dash-primary)"],
+          ["Pending Review", statusCounts.PENDING || 0, "#f59e0b"],
+          ["Platform Users", stats?.users || 0, "#8b5cf6"],
+          ["Total Orders", stats?.orders || 0, "#10b981"],
           [
             "Platform Revenue",
             `₹${Number(stats?.revenue || 0).toFixed(2)}`,
-            "#7f167f",
+            "#ec4899",
           ],
         ].map(([label, value, color]) => (
           <div
             key={label}
-            className="rounded-xl p-5 shadow-lg"
-            style={{ backgroundColor: color }}
+            className="dashboard-panel p-5 flex flex-col justify-between border-t-4"
+            style={{ borderTopColor: color }}
           >
-            <p className="text-xs uppercase tracking-wider text-white opacity-80">
+            <p className="text-xs uppercase tracking-wider text-[var(--dash-muted)] font-semibold">
               {label}
             </p>
-            <p className="mt-3 text-3xl font-bold">{value}</p>
+            <p className="mt-3 text-2xl font-bold text-[var(--dash-text)]">{value}</p>
           </div>
         ))}
       </div>
@@ -217,7 +224,7 @@ const PlatformAdmin = () => {
           <div className="mb-5 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold">Restaurants</h2>
-              <p className="mt-1 text-sm text-[#777]">
+              <p className="mt-1 text-sm text-[var(--dash-muted)]">
                 Showing {restaurants.length} of{" "}
                 {restaurantsQuery.data?.data.pagination?.total || 0}
               </p>
@@ -225,7 +232,7 @@ const PlatformAdmin = () => {
             <select
               value={status}
               onChange={(event) => setStatus(event.target.value)}
-              className="rounded-lg border border-[#383838] bg-[#262626] px-4 py-3 text-white outline-none"
+              className="rounded-lg border border-[var(--dash-border)] bg-[var(--dash-surface)] px-4 py-2.5 text-[var(--dash-text)] outline-none focus:border-[var(--dash-primary)] transition-colors cursor-pointer shadow-sm"
             >
               <option value="">All statuses</option>
               {["PENDING", "APPROVED", "REJECTED", "SUSPENDED"].map((item) => (
@@ -235,27 +242,27 @@ const PlatformAdmin = () => {
           </div>
 
           {restaurantsQuery.isLoading ? (
-            <div className="rounded-xl bg-[#262626] p-12 text-center text-[#ababab]">
+            <div className="dashboard-panel p-12 text-center text-[var(--dash-muted)]">
               Loading restaurants...
             </div>
           ) : restaurants.length ? (
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5">
               {restaurants.map((restaurant) => (
                 <article
                   key={restaurant.id}
                   onClick={() => setSelectedRestaurant(restaurant.id)}
-                  className="group cursor-pointer rounded-xl border border-[#333] bg-[#262626] p-5 shadow-lg transition hover:-translate-y-1 hover:border-[#555] hover:shadow-2xl"
+                  className="dashboard-panel p-5 cursor-pointer transition-all hover:border-[var(--dash-primary)] hover:shadow-md group"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="rounded-xl bg-[#1a1a1a] p-3 text-yellow-400">
-                        <MdOutlineRestaurant size={28} />
+                      <div className="rounded-xl bg-[var(--dash-primary-soft)] p-3 text-[var(--dash-primary-strong)]">
+                        <MdOutlineRestaurant size={24} />
                       </div>
                       <div className="min-w-0">
-                        <h3 className="truncate text-lg font-semibold text-white">
+                        <h3 className="truncate text-lg font-bold text-[var(--dash-text)]">
                           {restaurant.name}
                         </h3>
-                        <p className="mt-1 flex items-center gap-1 text-xs text-[#ababab]">
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-[var(--dash-muted)] font-medium">
                           <MdLocationOn /> {restaurant.city}
                         </p>
                       </div>
@@ -269,15 +276,15 @@ const PlatformAdmin = () => {
 
                   {/* Plan badge + inline plan selector for super admin */}
                   <div
-                    className="mt-3 flex items-center justify-between rounded-lg bg-[#1f1f1f] px-4 py-3"
+                    className="mt-4 flex items-center justify-between rounded-lg bg-[var(--dash-surface-muted)] px-4 py-3 border border-[var(--dash-border)]"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <div>
-                      <p className="text-[10px] uppercase tracking-wider text-[#777]">Subscription Plan</p>
+                      <p className="text-[10px] uppercase tracking-wider text-[var(--dash-muted)] font-semibold">Subscription Plan</p>
                       <p className="mt-0.5 font-bold text-sm" style={{
-                        color: restaurant.plan === "PROFESSIONAL" ? "#02ca3a"
+                        color: restaurant.plan === "PROFESSIONAL" ? "var(--dash-primary)"
                              : restaurant.plan === "ENTERPRISE" ? "#f59e0b"
-                             : "#6b7280"
+                             : "var(--dash-muted)"
                       }}>
                         {restaurant.plan || "STARTER"}
                       </p>
@@ -288,7 +295,7 @@ const PlatformAdmin = () => {
                         e.stopPropagation();
                         planMutation.mutate({ restaurantId: restaurant.id, plan: e.target.value });
                       }}
-                      className="rounded-lg border border-[#383838] bg-[#262626] px-3 py-2 text-xs text-white outline-none cursor-pointer hover:border-[#555] transition"
+                      className="rounded-lg border border-[var(--dash-border)] bg-[var(--dash-surface)] px-3 py-1.5 text-xs text-[var(--dash-text)] outline-none cursor-pointer hover:border-[var(--dash-primary)] transition-colors shadow-sm"
                       aria-label={`Change plan for ${restaurant.name}`}
                     >
                       <option value="STARTER">Starter (Free)</option>
@@ -297,19 +304,19 @@ const PlatformAdmin = () => {
                     </select>
                   </div>
 
-                  <div className="mt-5 rounded-lg bg-[#1f1f1f] p-4">
-                    <p className="text-xs uppercase tracking-wider text-[#777]">
+                  <div className="mt-3 rounded-lg bg-[var(--dash-surface-muted)] p-3.5 border border-[var(--dash-border)]">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--dash-muted)]">
                       Owner
                     </p>
-                    <p className="mt-1 font-medium text-white">
+                    <p className="mt-1 font-medium text-[var(--dash-text)] text-sm">
                       {restaurant.owner?.name}
                     </p>
-                    <p className="mt-1 truncate text-xs text-[#ababab]">
+                    <p className="truncate text-xs text-[var(--dash-muted)]">
                       {restaurant.owner?.email}
                     </p>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+                  <div className="mt-3 grid grid-cols-4 gap-2 text-center">
                     {[
                       [MdPeopleAlt, restaurant._count.staff, "Staff"],
                       [MdTableBar, restaurant._count.tables, "Tables"],
@@ -322,27 +329,27 @@ const PlatformAdmin = () => {
                     ].map(([Icon, value, label]) => (
                       <div
                         key={label}
-                        className="rounded-lg bg-[#1f1f1f] px-2 py-3"
+                        className="rounded-lg bg-[var(--dash-bg)] px-2 py-3 border border-[var(--dash-border)]"
                       >
-                        <Icon className="mx-auto text-[#ababab]" size={16} />
-                        <p className="mt-1 font-semibold text-white">{value}</p>
-                        <p className="text-[10px] text-[#777]">{label}</p>
+                        <Icon className="mx-auto text-[var(--dash-muted)]" size={16} />
+                        <p className="mt-1 font-semibold text-[var(--dash-text)]">{value}</p>
+                        <p className="text-[10px] text-[var(--dash-muted)] font-medium">{label}</p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-4 flex items-center gap-2 text-xs text-[#777]">
+                  <div className="mt-4 flex items-center gap-2 text-[11px] text-[var(--dash-muted)] font-medium">
                     <FaRegCalendarAlt />
                     {formatDateAndTime(restaurant.createdAt)}
                   </div>
 
-                  <div className="mt-5 flex items-center justify-between border-t border-[#383838] pt-4">
+                  <div className="mt-4 flex items-center justify-between border-t border-[var(--dash-border)] pt-4">
                     <button
                       onClick={(event) => {
                         event.stopPropagation();
                         setSelectedRestaurant(restaurant.id);
                       }}
-                      className="flex items-center gap-2 text-sm font-semibold text-blue-400 group-hover:text-blue-300"
+                      className="flex items-center gap-2 text-sm font-semibold text-[var(--dash-primary)] group-hover:text-[var(--dash-primary-strong)] transition-colors"
                     >
                       View Details <FaArrowRight />
                     </button>
@@ -354,21 +361,21 @@ const PlatformAdmin = () => {
               ))}
             </div>
           ) : (
-            <div className="rounded-xl bg-[#262626] p-12 text-center text-[#ababab]">
+            <div className="dashboard-panel p-12 text-center text-[var(--dash-muted)]">
               No restaurants match this status.
             </div>
           )}
         </>
       ) : (
-        <div className="rounded-xl bg-[#262626] p-5">
-          <div className="mb-5">
+        <div className="dashboard-panel p-6">
+          <div className="mb-6">
             <h2 className="text-xl font-semibold">Platform Users</h2>
-            <p className="mt-1 text-sm text-[#777]">
+            <p className="mt-1 text-sm text-[var(--dash-muted)]">
               Account role and tenant assignment overview.
             </p>
           </div>
-          <div className="overflow-hidden rounded-lg border border-[#383838]">
-            <div className="grid grid-cols-4 gap-4 bg-[#333] p-3 text-xs uppercase tracking-wider text-[#ababab]">
+          <div className="overflow-hidden rounded-lg border border-[var(--dash-border)]">
+            <div className="grid grid-cols-4 gap-4 bg-[var(--dash-surface-muted)] p-4 text-xs font-semibold uppercase tracking-wider text-[var(--dash-muted)]">
               <span>Name</span>
               <span>Email</span>
               <span>Role</span>
@@ -377,14 +384,14 @@ const PlatformAdmin = () => {
             {(usersQuery.data?.data.data || []).map((user) => (
               <div
                 key={user.id}
-                className="grid grid-cols-4 gap-4 border-t border-[#383838] p-4 text-sm text-[#ababab]"
+                className="grid grid-cols-4 gap-4 border-t border-[var(--dash-border)] p-4 text-sm text-[var(--dash-text)] transition-colors hover:bg-[var(--dash-surface-muted)]"
               >
-                <span className="font-medium text-white">{user.name}</span>
-                <span>{user.email}</span>
-                <span className="font-semibold text-yellow-400">
+                <span className="font-medium">{user.name}</span>
+                <span className="text-[var(--dash-muted)]">{user.email}</span>
+                <span className="font-semibold text-[var(--dash-primary)]">
                   {user.role}
                 </span>
-                <span>{user.restaurantId || "Platform"}</span>
+                <span className="text-[var(--dash-muted)]">{user.restaurantId || "Platform"}</span>
               </div>
             ))}
           </div>
@@ -477,7 +484,8 @@ const PlatformAdmin = () => {
           </div>
         </div>
       )}
-    </section>
+      </main>
+    </div>
   );
 };
 

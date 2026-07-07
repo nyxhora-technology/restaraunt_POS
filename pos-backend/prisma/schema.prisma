@@ -12,17 +12,21 @@ datasource db {
 // ─────────────────────────────────────────
 
 model User {
-  id              String      @id @default(cuid())
-  name            String
-  email           String      @unique
-  emailVerified   Boolean     @default(false)
-  image           String?
-  phone           String?
-  role            Role        @default(CASHIER)
-  restaurantId    String?
-  mustChangePassword Boolean  @default(false)
-  restaurant      Restaurant? @relation("RestaurantStaff", fields: [restaurantId], references: [id])
-  ownedRestaurant Restaurant? @relation("RestaurantOwner")
+  id                 String      @id @default(cuid())
+  name               String
+  email              String      @unique
+  emailVerified      Boolean     @default(false)
+  image              String?
+  phone              String?
+  role               Role        @default(CASHIER)
+  restaurantId       String?
+  mustChangePassword Boolean     @default(false)
+  restaurant         Restaurant? @relation("RestaurantStaff", fields: [restaurantId], references: [id])
+  ownedRestaurant    Restaurant? @relation("RestaurantOwner")
+
+  // Referral relations
+  referralsMade    Referral[] @relation("ReferralsMade")
+  referralReceived Referral?  @relation("ReferralReceived")
 
   // Better Auth tables
   sessions Session[]
@@ -58,7 +62,10 @@ model Account {
   providerId           String
   accessToken          String?
   refreshToken         String?
+  idToken              String?
   accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                String?
   password             String?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
@@ -116,6 +123,7 @@ model Restaurant {
   suppliers       Supplier[]
   purchaseOrders  PurchaseOrder[]
   stockCounts     StockCount[]
+  reservations    Reservation[]
 
   // Rejection reason from super admin
   rejectionReason String?
@@ -123,11 +131,17 @@ model Restaurant {
   // Subscription plan
   plan Plan @default(STARTER)
 
+  // Referral system
+  referralCode String? @unique // e.g. "spice-garden-a3f2" — generated on APPROVAL
+  referredById String? // User.id of the owner who referred this restaurant
+  creditDays   Int     @default(0) // accumulated free-day credits from referrals
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([ownerId])
+  @@index([referralCode])
 }
 
 // ─────────────────────────────────────────
@@ -212,25 +226,26 @@ model DiningArea {
 }
 
 model Table {
-  id               String       @id @default(cuid())
+  id               String        @id @default(cuid())
   tableNo          Int
   label            String?
-  minSeats         Int          @default(1)
+  minSeats         Int           @default(1)
   seats            Int
-  shape            TableShape   @default(SQUARE)
-  isCombinable     Boolean      @default(false)
+  shape            TableShape    @default(SQUARE)
+  isCombinable     Boolean       @default(false)
   combinationGroup String?
-  isActive         Boolean      @default(true)
-  status           TableStatus  @default(AVAILABLE)
+  isActive         Boolean       @default(true)
+  status           TableStatus   @default(AVAILABLE)
   restaurantId     String
-  restaurant       Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurant       Restaurant    @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   areaId           String?
-  area             DiningArea?  @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  area             DiningArea?   @relation(fields: [areaId], references: [id], onDelete: SetNull)
   currentOrderId   String?
-  currentOrder     Order?       @relation("ActiveTableOrder", fields: [currentOrderId], references: [id])
-  orders           Order[]      @relation("TableOrders")
-  orderAssignments OrderTable[] @relation("TableOrderAssignments")
+  currentOrder     Order?        @relation("ActiveTableOrder", fields: [currentOrderId], references: [id])
+  orders           Order[]       @relation("TableOrders")
+  orderAssignments OrderTable[]  @relation("TableOrderAssignments")
   qrCodes          QrCode[]
+  reservations     Reservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -323,6 +338,24 @@ model OrderItem {
   @@index([orderId])
 }
 
+model Reservation {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  tableId      String
+  table        Table      @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  name         String
+  phone        String
+  reservedAt   DateTime
+  partySize    Int
+  notes        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([restaurantId, reservedAt])
+  @@index([tableId, reservedAt])
+}
+
 // ─────────────────────────────────────────
 // PAYMENTS
 // ─────────────────────────────────────────
@@ -396,6 +429,41 @@ enum RestaurantStatus {
   APPROVED
   REJECTED
   SUSPENDED
+}
+
+// ─────────────────────────────────────────
+// REFERRAL SYSTEM
+// ─────────────────────────────────────────
+
+enum ReferralStatus {
+  PENDING    // new restaurant registered, not yet approved
+  COMPLETED  // restaurant approved, reward given to both sides
+  EXPIRED    // not approved within 90 days — no reward
+}
+
+model Referral {
+  id         String         @id @default(cuid())
+  // The owner who shared their referral link
+  referrerId String
+  referrer   User           @relation("ReferralsMade", fields: [referrerId], references: [id])
+  // The new restaurant owner who used the link
+  refereeId  String         @unique // One referral record per new owner
+  referee    User           @relation("ReferralReceived", fields: [refereeId], references: [id])
+
+  status     ReferralStatus @default(PENDING)
+
+  // Both-side rewards (configurable per referral if needed later)
+  referrerRewardDays Int     @default(30) // days credited to referrer on completion
+  refereeRewardDays  Int     @default(15) // days credited to new restaurant on completion
+
+  rewardGiven Boolean   @default(false)
+  expiresAt   DateTime  // 90 days from createdAt — after this → EXPIRED
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([referrerId])
+  @@index([status])
+  @@index([expiresAt])
 }
 
 enum TableStatus {

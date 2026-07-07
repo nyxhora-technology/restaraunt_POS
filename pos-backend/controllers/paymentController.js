@@ -7,6 +7,9 @@ const { getIo } = require("../config/socket");
 const { writeAudit } = require("../utils/audit");
 
 const getRazorpay = () => {
+  if (!config.onlinePaymentsEnabled) {
+    throw createHttpError(503, "Online payments are disabled");
+  }
   if (!config.razorpayKeyId || !config.razorpaySecretKey) {
     throw createHttpError(503, "Online payments are not configured");
   }
@@ -29,46 +32,78 @@ const completePayment = async ({
   method,
   email,
   contact,
-}) =>
-  prisma.$transaction(async (tx) => {
-    const existing = await tx.payment.findUnique({
-      where: { orderId: order.id },
+}) => {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      if (paymentId) {
+        const existingByPaymentId = await tx.payment.findUnique({
+          where: { paymentId },
+        });
+        if (existingByPaymentId) {
+          if (
+            existingByPaymentId.orderId !== order.id ||
+            existingByPaymentId.restaurantId !== order.restaurantId
+          ) {
+            throw createHttpError(409, "Payment is already linked to another order");
+          }
+          return existingByPaymentId;
+        }
+      }
+
+      const existing = await tx.payment.findUnique({
+        where: { orderId: order.id },
+      });
+      if (existing) return existing;
+
+      const payment = await tx.payment.create({
+        data: {
+          orderId: order.id,
+          restaurantId: order.restaurantId,
+          paymentId,
+          amount: Number(order.totalWithTax),
+          currency: "INR",
+          status,
+          method,
+          email,
+          contact,
+        },
+      });
+      await tx.order.update({
+        where: { id: order.id },
+        data: {
+          paymentStatus: "PAID",
+          paymentMethod: method,
+          razorpayPaymentId: method === "ONLINE" ? paymentId : undefined,
+          orderStatus: "COMPLETED",
+        },
+      });
+      if (order.tableId) {
+        await tx.table.updateMany({
+          where: {
+            restaurantId: order.restaurantId,
+            currentOrderId: order.id,
+          },
+          data: { status: "AVAILABLE", currentOrderId: null },
+        });
+      }
+      return payment;
+    });
+  } catch (error) {
+    if (error?.code !== "P2002") throw error;
+
+    const existingPaymentLookups = [{ orderId: order.id }];
+    if (paymentId) existingPaymentLookups.push({ paymentId });
+
+    const existing = await prisma.payment.findFirst({
+      where: {
+        restaurantId: order.restaurantId,
+        OR: existingPaymentLookups,
+      },
     });
     if (existing) return existing;
-
-    const payment = await tx.payment.create({
-      data: {
-        orderId: order.id,
-        restaurantId: order.restaurantId,
-        paymentId,
-        amount: Number(order.totalWithTax),
-        currency: "INR",
-        status,
-        method,
-        email,
-        contact,
-      },
-    });
-    await tx.order.update({
-      where: { id: order.id },
-      data: {
-        paymentStatus: "PAID",
-        paymentMethod: method,
-        razorpayPaymentId: method === "ONLINE" ? paymentId : undefined,
-        orderStatus: "COMPLETED",
-      },
-    });
-    if (order.tableId) {
-      await tx.table.updateMany({
-        where: {
-          restaurantId: order.restaurantId,
-          currentOrderId: order.id,
-        },
-        data: { status: "AVAILABLE", currentOrderId: null },
-      });
-    }
-    return payment;
-  });
+    throw error;
+  }
+};
 
 const createOrder = async (req, res, next) => {
   try {

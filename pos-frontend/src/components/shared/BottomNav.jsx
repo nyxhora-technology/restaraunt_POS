@@ -29,16 +29,16 @@ const BottomNav = ({ dashboardVariant = false, onCreateOrder }) => {
   const closeModal = () => setIsModalOpen(false);
 
   const isActive = (path) => location.pathname === path;
-  const isTablesActive = ["/table", "/tables"].includes(location.pathname);
+  const isTablesActive = location.pathname === "/app/tables";
   const isMoreActive = [
-    "/more",
-    "/dashboard",
-    "/menu",
-    "/settings",
-    "/inventory",
-    "/qr",
+    "/app/more",
+    "/app/dashboard",
+    "/app/menu",
+    "/app/settings",
+    "/app/inventory",
+    "/app/qr",
   ].includes(location.pathname);
-  const homePath = isManagement ? "/" : "/dashboard";
+  const homePath = isManagement ? "/app" : "/app/dashboard";
   const navigationItems = [
     {
       label: "Home",
@@ -49,21 +49,21 @@ const BottomNav = ({ dashboardVariant = false, onCreateOrder }) => {
     },
     {
       label: "Orders",
-      path: "/orders",
+      path: "/app/orders",
       icon: MdOutlineReorder,
-      active: isActive("/orders"),
+      active: isActive("/app/orders"),
       roles: ORDER_ROLES,
     },
     {
       label: "Tables",
-      path: "/tables",
+      path: "/app/tables",
       icon: MdTableBar,
       active: isTablesActive,
       roles: ORDER_ROLES,
     },
     {
       label: "More",
-      path: "/more",
+      path: "/app/more",
       icon: dashboardVariant ? MdOutlineMoreHoriz : CiCircleMore,
       active: isMoreActive,
       roles: TENANT_ROLES,
@@ -77,8 +77,8 @@ const BottomNav = ({ dashboardVariant = false, onCreateOrder }) => {
     <div
       className={
         dashboardVariant
-          ? "dashboard-bottom-nav"
-          : "fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around"
+          ? "dashboard-bottom-nav tour-bottom-nav"
+          : "fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around tour-bottom-nav"
       }
       style={
         dashboardVariant
@@ -111,7 +111,7 @@ const BottomNav = ({ dashboardVariant = false, onCreateOrder }) => {
 
       {canHandleOrders && (
         <button
-          disabled={isTablesActive || isActive("/menu")}
+          disabled={isTablesActive || isActive("/app/menu")}
           onClick={openModal}
           className={
             dashboardVariant

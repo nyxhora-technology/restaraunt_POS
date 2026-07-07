@@ -25,7 +25,7 @@ const PopularDishes = ({ dishes, isLoading }) => {
         </div>
         <button
           type="button"
-          onClick={() => navigate("/menu")}
+          onClick={() => navigate("/app/menu")}
           className="dashboard-text-button"
         >
           View all
@@ -62,7 +62,7 @@ const PopularDishes = ({ dishes, isLoading }) => {
             <button
               type="button"
               className="dashboard-empty-cta"
-              onClick={() => navigate("/menu")}
+              onClick={() => navigate("/app/menu")}
             >
               <HiOutlineSparkles /> Add menu items <MdArrowForward />
             </button>

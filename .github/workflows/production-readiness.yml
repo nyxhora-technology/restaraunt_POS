@@ -1,0 +1,64 @@
+name: Production Readiness Checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  backend:
+    name: Backend validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pos-backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: pos-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate backend
+        run: npm run check
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+  frontend:
+    name: Frontend validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pos-frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: pos-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev

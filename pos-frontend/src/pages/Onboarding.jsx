@@ -3,9 +3,9 @@ import { Helmet } from "react-helmet-async";
 import { useDispatch, useSelector } from "react-redux";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
-import { getErrorMessage, getMyRestaurant, getUserData, registerRestaurant, logout } from "../https";
+import { getErrorMessage, getMyRestaurant, registerRestaurant, logout, validateReferralCode } from "../https";
 import { removeUser, setRestaurant, setUser } from "../redux/slices/userSlice";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import logo from "../assets/images/logo.png";
 import {
   HiOutlineOfficeBuilding,
@@ -69,8 +69,12 @@ const STATUS_CONFIG = {
 export default function Onboarding() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useSelector((s) => s.user);
   const { email, name: userName, restaurant } = user;
+
+  // Referral code from URL (?ref=xxx) — persist across step navigation
+  const [referralCode] = useState(() => searchParams.get("ref") || "");
 
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -83,6 +87,17 @@ export default function Onboarding() {
     currency: "INR",
   });
   const [resubmit, setResubmit] = useState(false);
+
+  // Validate referral code (public endpoint — no auth needed)
+  const refValidation = useQuery({
+    queryKey: ["referral-validate", referralCode],
+    queryFn: () => validateReferralCode(referralCode),
+    enabled: Boolean(referralCode),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const refData = refValidation.data?.data?.data;
+  const refValid = refData?.valid === true;
 
   useEffect(() => { document.title = "Restro | Restaurant Setup"; }, []);
 
@@ -110,7 +125,10 @@ export default function Onboarding() {
     onSuccess: ({ data }) => {
       dispatch(setRestaurant(data.data));
       dispatch(setUser({ ...user, role: "OWNER", restaurantId: data.data.id }));
-      enqueueSnackbar("Restaurant submitted for approval!", { variant: "success" });
+      const msg = data.referralApplied
+        ? "Restaurant submitted! Your referral bonus will be credited on approval."
+        : "Restaurant submitted for approval!";
+      enqueueSnackbar(msg, { variant: "success" });
       setResubmit(false);
     },
     onError: (error) =>
@@ -160,12 +178,12 @@ export default function Onboarding() {
               <div className="onboarding-waiting-pulse">✅</div>
               <h1>Application submitted!</h1>
               <p className="onboarding-waiting-sub">
-                We received <strong>{restaurant.name}</strong>'s details and our team is reviewing them now.
+                We received <strong>{restaurant.name}</strong>&apos;s details and our team is reviewing them now.
               </p>
               <div className="onboarding-waiting-eta">
                 <span className="onboarding-mini-spinner" />
                 <strong>Usually approved within 2 hours</strong>
-                <span>· We'll email you at {email}</span>
+                <span>· We&apos;ll email you at {email}</span>
               </div>
             </div>
 
@@ -191,7 +209,7 @@ export default function Onboarding() {
                   <div className="onboarding-tl-dot" />
                   <div>
                     <strong>Workspace unlocked</strong>
-                    <p>You'll be taken straight to your dashboard — no reload needed.</p>
+                    <p>You&apos;ll be taken straight to your dashboard — no reload needed.</p>
                   </div>
                 </div>
               </div>
@@ -214,14 +232,14 @@ export default function Onboarding() {
                 <div>
                   <span>📱</span>
                   <strong>Bookmark this page</strong>
-                  <p>Open it on the tablet or device you'll use at the counter — it works everywhere.</p>
+                  <p>Open it on the tablet or device you&apos;ll use at the counter — it works everywhere.</p>
                 </div>
               </div>
             </div>
 
             <p className="onboarding-waiting-footer">
               This page checks for approval every 15 seconds automatically.
-              You'll be redirected the moment we approve — no action needed.
+              You&apos;ll be redirected the moment we approve — no action needed.
             </p>
           </div>
         ) : (
@@ -298,6 +316,17 @@ export default function Onboarding() {
             <div className="onboarding-progress-bar" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
           </div>
 
+          {/* Referral Banner */}
+          {refValid && (
+            <div className="onboarding-referral-banner">
+              <span>🎁</span>
+              <div>
+                <strong>You were referred by {refData.referredByName} ({refData.referredByRestaurant})</strong>
+                <p>Get approved and earn <strong>+{refData.youGet} free days</strong>. They earn <strong>+{refData.theyGet} days</strong> too!</p>
+              </div>
+            </div>
+          )}
+
           <div className="onboarding-step-header">
             <span className="onboarding-step-badge">Step {step + 1} of {STEPS.length}</span>
             <h2>{step === 0 ? "What's your restaurant called?" : step === 1 ? "How can customers reach you?" : "A little more about your restaurant"}</h2>
@@ -309,7 +338,10 @@ export default function Onboarding() {
             onSubmit={(e) => {
               e.preventDefault();
               if (step < STEPS.length - 1) { setStep((s) => s + 1); return; }
-              mutation.mutate(formData);
+              mutation.mutate({
+                ...formData,
+                ...(referralCode ? { referralCode } : {}),
+              });
             }}
           >
             {step === 0 && (

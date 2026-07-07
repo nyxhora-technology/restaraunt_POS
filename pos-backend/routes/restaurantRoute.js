@@ -24,12 +24,14 @@ const profileFields = {
   email: z.string().trim().email().max(254),
   description: z.string().trim().max(1000).optional(),
   logo: z.string().url().max(1000).optional(),
+  // currency was previously missing — caused currency updates to be silently stripped
+  currency: z.enum(["INR", "USD", "EUR", "GBP", "AUD"]).optional(),
 };
 
 router.post(
   "/register",
   requireAuth,
-  validate(z.object(profileFields).omit({ logo: true })),
+  validate(z.object({ ...profileFields, referralCode: z.string().max(60).optional() }).omit({ logo: true })),
   registerRestaurant,
 );
 router.get("/context", requireAuth, (req, res) => {

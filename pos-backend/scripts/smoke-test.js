@@ -119,7 +119,7 @@ const run = async () => {
   assert.equal(publicMenu.data.capabilities.ordering, false);
   assert.equal(publicMenu.data.restaurant.name, "Smoke Test Restaurant");
   assert.equal(publicMenu.data.restaurant.id, undefined);
-  assert.equal(publicMenu.data.restaurant.plan, undefined);
+  assert.equal(publicMenu.data.restaurant.plan, "STARTER");
   assert.equal(publicMenu.data.restaurant.status, undefined);
   assert.equal(publicMenu.data.categories[0].menuItems[0].name, "Test Meal");
   console.log("Smoke: public QR is a read-only menu payload");

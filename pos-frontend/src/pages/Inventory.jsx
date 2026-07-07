@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Helmet } from "react-helmet-async";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import {
   getInventoryItems, deleteInventoryItem, restockInventoryItem, adjustInventoryItem,
   createInventoryItem, updateInventoryItem,
-  getInventoryAlerts, markAllAlertsRead, markAlertRead,
+  getInventoryAlerts, markAllAlertsRead,
   getInventoryLogs, getInventoryAnalytics,
   getSuppliers, createSupplier, updateSupplier, deleteSupplier,
   getPurchaseOrders, createPurchaseOrder, markPOOrdered, receivePurchaseOrder, cancelPurchaseOrder,
   getStockCounts, startStockCount, getStockCount, updateStockCountItems, completeStockCount, cancelStockCount,
-  getErrorMessage, getMenu,
+  getErrorMessage, getMenu, exportInventory,
 } from "../https";
 import useFeature from "../hooks/useFeature";
 import useRole from "../hooks/useRole";
@@ -24,6 +23,7 @@ const Icon = {
   ClipList: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>,
   Chart: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
   Bell: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  Download: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>,
   Plus: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
   X: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
   Check: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4"><polyline points="20 6 9 17 4 12"/></svg>,
@@ -365,7 +365,6 @@ const ItemsTab = ({ suppliers }) => {
   allItems.forEach((item) => { const cat = item.menuItem?.category; if (cat && !seenCatIds.has(cat.id)) { seenCatIds.add(cat.id); categories.push(cat); } });
 
   const lowCount = allItems.filter((i) => i.stockPercent <= i.alertThreshold).length;
-  const outCount = allItems.filter((i) => i.currentStock <= 0).length;
   const reorderCount = allItems.filter((i) => i.needsReorder).length;
   const expiringCount = allItems.filter((i) => i.daysUntilExpiry !== null && i.daysUntilExpiry <= 7).length;
   const totalValue = allItems.reduce((s, i) => s + (i.currentStock * (i.costPerUnit || 0)), 0);
@@ -527,7 +526,7 @@ const SuppliersTab = () => {
                   <button onClick={() => { if (confirm("Delete this supplier?")) delMut.mutate(s.id); }} className="dashboard-danger-button p-1.5 rounded"><Icon.Trash /></button>
                 </div>
               </div>
-              {s.notes && <p className="text-xs text-[var(--dash-muted)] mt-2 italic border-t border-[var(--dash-border)] pt-2">"{s.notes}"</p>}
+              {s.notes && <p className="text-xs text-[var(--dash-muted)] mt-2 italic border-t border-[var(--dash-border)] pt-2">&ldquo;{s.notes}&rdquo;</p>}
             </div>
           ))}
         </div>
@@ -738,14 +737,14 @@ const StockCountTab = () => {
   const queryClient = useQueryClient();
   const [activeCount, setActiveCount] = useState(null);
   const [countData, setCountData] = useState({});
-  const [notes, setNotes] = useState("");
+  const [notes] = useState("");
   const [search, setSearch] = useState("");
 
   const { data, isLoading } = useQuery({ queryKey: ["stockCounts"], queryFn: getStockCounts });
   const counts = data?.data?.data || [];
   const inProgress = counts.find((c) => c.status === "IN_PROGRESS");
 
-  const { data: countDetail, isLoading: detailLoading } = useQuery({
+  const { data: countDetail } = useQuery({
     queryKey: ["stockCount", activeCount],
     queryFn: () => getStockCount(activeCount),
     enabled: !!activeCount,
@@ -1023,14 +1022,13 @@ const TABS = [
 ];
 
 const Inventory = () => {
-  const { hasInventory } = useFeature();
+  const { hasInventory, hasExport } = useFeature();
   const { isManagement } = useRole();
   const canAccessInventory = isManagement && hasInventory;
   const [activeTab, setActiveTab] = useState("items");
   const [showAlerts, setShowAlerts] = useState(false);
   const queryClient = useQueryClient();
 
-  useEffect(() => { /* document.title now set via Helmet */ }, []);
 
   const { data: suppliersData } = useQuery({
     queryKey: ["suppliers"],
@@ -1064,6 +1062,23 @@ const Inventory = () => {
 
   const markAllMut = useMutation({ mutationFn: markAllAlertsRead, onSuccess: () => queryClient.invalidateQueries({ queryKey: ["inventoryAlerts"] }) });
 
+  const handleExport = async () => {
+    if (!hasExport) return;
+    try {
+      const response = await exportInventory();
+      const url = URL.createObjectURL(response.data);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download =
+        response.headers["content-disposition"]?.match(/filename="([^"]+)"/)?.[1] ||
+        `inventory-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      enqueueSnackbar("Inventory export could not be generated.", { variant: "error" });
+    }
+  };
+
   if (!isManagement) return null;
 
   if (!hasInventory) return (
@@ -1080,12 +1095,17 @@ const Inventory = () => {
           <h1 className="text-2xl font-bold text-[var(--dash-text)]">Inventory Management</h1>
           <p className="text-sm text-[var(--dash-muted)]">Manage stock, suppliers, purchase orders & audits</p>
         </div>
+        <div className="flex items-center gap-2">
+        <button type="button" onClick={handleExport} className="pro-action-button">
+          <Icon.Download /> Export CSV
+        </button>
         <button onClick={() => setShowAlerts((p) => !p)} className="relative dashboard-secondary-button p-2.5 rounded-xl">
           <Icon.Bell />
           {unreadAlerts.length > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">{unreadAlerts.length}</span>
           )}
         </button>
+        </div>
       </div>
 
       {/* Alerts Panel */}

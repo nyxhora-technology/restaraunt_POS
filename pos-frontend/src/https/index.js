@@ -10,19 +10,33 @@ export const register = ({ name, email, password, phone }) =>
     password,
     phone,
   });
-export const getSession = () => axiosWrapper.get("/api/auth/get-session");
-export const signInWithGoogle = async () => {
-  const callbackURL = `${window.location.origin}/auth/callback`;
+export const getSession = (config) =>
+  axiosWrapper.get("/api/auth/get-session", config);
+export const getAuthCapabilities = (config) =>
+  axiosWrapper.get("/api/config/auth", config);
+export const signInWithGoogle = async ({
+  isRegister = false,
+  returnTo = "",
+} = {}) => {
+  const callbackParams = new URLSearchParams();
+  if (returnTo) callbackParams.set("returnTo", returnTo);
+  const callbackQuery = callbackParams.toString();
+  const callbackURL = `${window.location.origin}/auth/callback${
+    callbackQuery ? `?${callbackQuery}` : ""
+  }`;
   const { data } = await axiosWrapper.post("/api/auth/sign-in/social", {
     provider: "google",
     callbackURL,
-    errorCallbackURL: `${window.location.origin}/auth?tab=register&oauth=error`,
+    errorCallbackURL: `${window.location.origin}/auth?${
+      isRegister ? "tab=register&" : ""
+    }${returnTo ? `returnTo=${encodeURIComponent(returnTo)}&` : ""}oauth=error`,
   });
 
-  if (!data?.url) throw new Error("Google sign-up could not be started");
+  if (!data?.url) throw new Error("Google authentication could not be started");
   window.location.assign(data.url);
 };
-export const getUserData = () => axiosWrapper.get("/api/restaurant/context");
+export const getUserData = (config) =>
+  axiosWrapper.get("/api/restaurant/context", config);
 export const logout = () => axiosWrapper.post("/api/auth/sign-out");
 export const changePassword = (data) =>
   axiosWrapper.post("/api/auth/change-password", data);
@@ -30,7 +44,8 @@ export const changeFirstPassword = (data) =>
   axiosWrapper.post("/api/restaurant/staff/change-password", data);
 
 // Restaurant / tenant endpoints
-export const getMyRestaurant = () => axiosWrapper.get("/api/restaurant/me");
+export const getMyRestaurant = (config) =>
+  axiosWrapper.get("/api/restaurant/me", config);
 export const updateMyRestaurant = (data) =>
   axiosWrapper.put("/api/restaurant/me", data);
 export const registerRestaurant = (data) =>
@@ -90,6 +105,12 @@ export const getOrders = (params) => axiosWrapper.get("/api/order", { params });
 export const getKitchenOrders = () => axiosWrapper.get("/api/order/kitchen");
 export const getDashboard = () => axiosWrapper.get("/api/order/dashboard");
 export const getOrderUsage = () => axiosWrapper.get("/api/order/usage");
+export const getAnalytics = (days) =>
+  axiosWrapper.get("/api/analytics", { params: { days } });
+export const exportOrders = (params) =>
+  axiosWrapper.get("/api/export/orders", { params, responseType: "blob" });
+export const exportInventory = () =>
+  axiosWrapper.get("/api/export/inventory", { responseType: "blob" });
 export const updateOrderStatus = ({ orderId, orderStatus }) =>
   axiosWrapper.put(`/api/order/${orderId}/status`, { orderStatus });
 export const updateOrderItems = ({ orderId, items }) =>
@@ -179,9 +200,23 @@ export const deleteQrCode = (id) => axiosWrapper.delete(`/api/qr/${id}`);
 export const getPublicMenu = (slug) =>
   axiosWrapper.get(`/api/qr/public/${slug}`);
 
+// Reservations
+export const getReservations = () => axiosWrapper.get("/api/reservations");
+export const createReservation = (data) =>
+  axiosWrapper.post("/api/reservations", data);
+export const updateReservation = ({ id, ...data }) =>
+  axiosWrapper.patch(`/api/reservations/${id}`, data);
+export const deleteReservation = (id) =>
+  axiosWrapper.delete(`/api/reservations/${id}`);
+
 // Admin plan management
 export const updateRestaurantPlan = ({ restaurantId, plan }) =>
   axiosWrapper.put(`/api/admin/restaurants/${restaurantId}/plan`, { plan });
+
+// Referral endpoints
+export const getMyReferrals = () => axiosWrapper.get("/api/referral/me");
+export const validateReferralCode = (code) =>
+  axiosWrapper.get(`/api/referral/validate/${encodeURIComponent(code)}`);
 
 export const getErrorMessage = (error, fallback = "Something went wrong") =>
   error?.response?.data?.message || error?.message || fallback;

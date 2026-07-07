@@ -10,6 +10,7 @@ import {
   toggleMenuItem,
 } from "../../https";
 import MenuModal from "./MenuModal";
+import PlanLimitBadge from "../shared/PlanLimitBadge";
 
 // ─── Inline confirm dialog — no browser prompts ───────────────────────────────
 const ConfirmDialog = ({ title, message, confirmLabel = "Delete", confirmClass = "dashboard-danger-button", onConfirm, onCancel, extra }) => (
@@ -113,7 +114,10 @@ const MenuManagement = () => {
   return (
     <div className="dashboard-management-panel container mx-auto p-5 rounded-lg max-h-[650px] overflow-y-auto scrollbar-hide">
       <div className="flex justify-between items-center mb-5">
-        <h2 className="text-xl font-semibold">Menu Management</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-semibold">Menu Management</h2>
+          <PlanLimitBadge resource="menu_items" warnAt={5} />
+        </div>
         <div className="flex gap-3">
           <button
             onClick={() => setModal({ action: "category" })}

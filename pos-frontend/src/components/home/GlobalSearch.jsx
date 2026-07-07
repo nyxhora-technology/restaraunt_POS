@@ -26,56 +26,56 @@ const navigationItems = [
   {
     label: "Dashboard",
     detail: "Overview and metrics",
-    path: "/dashboard",
+    path: "/app/dashboard",
     icon: MdOutlineDashboard,
     roles: TENANT_ROLES,
   },
   {
     label: "Orders",
     detail: "View all orders",
-    path: "/orders",
+    path: "/app/orders",
     icon: MdOutlineReceiptLong,
     roles: ORDER_ROLES,
   },
   {
     label: "Tables",
     detail: "Manage restaurant tables",
-    path: "/tables",
+    path: "/app/tables",
     icon: MdTableRestaurant,
     roles: ORDER_ROLES,
   },
   {
     label: "Menu",
     detail: "Browse menu items",
-    path: "/menu",
+    path: "/app/menu",
     icon: MdOutlineMenuBook,
     roles: ORDER_ROLES,
   },
   {
     label: "Inventory",
     detail: "Stock, alerts, and restock actions",
-    path: "/inventory",
+    path: "/app/inventory",
     icon: MdInventory2,
     roles: MANAGER_ROLES,
   },
   {
     label: "QR Menu",
     detail: "Generate and manage guest QR menus",
-    path: "/qr",
+    path: "/app/qr",
     icon: MdQrCode2,
     roles: MANAGER_ROLES,
   },
   {
     label: "Settings",
     detail: "Account and restaurant settings",
-    path: "/settings",
+    path: "/app/settings",
     icon: MdSettings,
     roles: TENANT_ROLES,
   },
   {
     label: "More",
     detail: "All workspace sections",
-    path: "/more",
+    path: "/app/more",
     icon: MdMoreHoriz,
     roles: TENANT_ROLES,
   },
@@ -146,7 +146,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
       .map((order) => ({
         label: `Order #${order.orderNo || String(order.id).slice(-6)}`,
         detail: `${order.customerName || "Guest"} · ${order.orderStatus}`,
-        path: "/orders",
+        path: "/app/orders",
         icon: MdOutlineReceiptLong,
         type: "Order",
       }));
@@ -163,7 +163,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
         detail: `${table.area?.name || "Main Dining"} · ${table.status} · ${
           table.seats
         } seats`,
-        path: "/tables",
+        path: "/app/tables",
         icon: MdTableRestaurant,
         type: "Table",
       }));
@@ -180,7 +180,7 @@ const GlobalSearch = ({ isOpen, onClose }) => {
       .map((item) => ({
         label: item.name,
         detail: `${item.categoryName} · ₹${item.price}`,
-        path: "/menu",
+        path: "/app/menu",
         icon: MdOutlineMenuBook,
         type: "Menu item",
       }));

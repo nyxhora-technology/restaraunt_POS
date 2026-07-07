@@ -13,8 +13,11 @@ import {
   MdTableRestaurant,
   MdChevronLeft,
   MdChevronRight,
+  MdInsights,
+  MdLockOutline,
 } from "react-icons/md";
 import useRole from "../../hooks/useRole";
+import useFeature from "../../hooks/useFeature";
 import {
   MANAGER_ROLES,
   ORDER_ROLES,
@@ -23,45 +26,51 @@ import {
 
 const navItems = [
   {
+    label: "Analytics",
+    path: "/app/analytics",
+    icon: MdInsights,
+    roles: MANAGER_ROLES,
+    feature: "ANALYTICS_EXTENDED",
+  },
+  {
     label: "Orders",
-    path: "/orders",
+    path: "/app/orders",
     icon: MdOutlineReceiptLong,
     roles: ORDER_ROLES,
   },
   {
     label: "Tables",
-    path: "/tables",
-    aliases: ["/table"],
+    path: "/app/tables",
     icon: MdTableRestaurant,
     roles: ORDER_ROLES,
   },
   {
     label: "Menu",
-    path: "/menu",
+    path: "/app/menu",
     icon: MdOutlineMenuBook,
     roles: ORDER_ROLES,
   },
   {
     label: "Inventory",
-    path: "/inventory",
+    path: "/app/inventory",
     icon: MdInventory2,
     roles: MANAGER_ROLES,
   },
   {
     label: "QR Menu",
-    path: "/qr",
+    path: "/app/qr",
     icon: MdQrCode2,
     roles: MANAGER_ROLES,
   },
   {
     label: "Admin Workspace",
-    path: "/dashboard",
+    path: "/app/dashboard",
     icon: MdOutlineAdminPanelSettings,
     roles: MANAGER_ROLES,
   },
   {
     label: "Settings",
-    path: "/settings",
+    path: "/app/settings",
     icon: MdOutlineSettings,
     roles: TENANT_ROLES,
   },
@@ -76,7 +85,8 @@ const DashboardSidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
   const { role, isManagement, canHandleOrders } = useRole();
-  const dashboardPath = isManagement ? "/" : "/dashboard";
+  const { hasFeature } = useFeature();
+  const dashboardPath = isManagement ? "/app" : "/app/dashboard";
   const visibleNavItems = [
     {
       label: "Dashboard",
@@ -108,9 +118,10 @@ const DashboardSidebar = ({
       </button>
 
       <nav className="dashboard-sidebar-nav" aria-label="Dashboard navigation">
-        {visibleNavItems.map(({ label, path, aliases = [], icon: Icon }) => {
+        {visibleNavItems.map(({ label, path, aliases = [], icon: Icon, feature }) => {
           const active =
             location.pathname === path || aliases.includes(location.pathname);
+          const locked = feature && !hasFeature(feature);
           return (
             <button
               type="button"
@@ -118,9 +129,11 @@ const DashboardSidebar = ({
               onClick={() => navigate(path)}
               className={`dashboard-sidebar-link ${active ? "is-active" : ""}`}
               title={collapsed ? label : undefined}
+              data-tour={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <Icon />
               {!collapsed && <span>{label}</span>}
+              {locked && <MdLockOutline className="dashboard-nav-lock" />}
             </button>
           );
         })}

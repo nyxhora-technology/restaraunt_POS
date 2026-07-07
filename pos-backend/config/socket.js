@@ -49,4 +49,13 @@ const getIo = () => {
   return io;
 };
 
-module.exports = { initSocket, getIo };
+const closeSocket = () =>
+  new Promise((resolve) => {
+    if (!io) return resolve();
+    io.close(() => {
+      io = undefined;
+      resolve();
+    });
+  });
+
+module.exports = { initSocket, getIo, closeSocket };

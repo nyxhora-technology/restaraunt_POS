@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addOrder, getErrorMessage } from "../../https";
 import { getTotalPrice, removeAllItems } from "../../redux/slices/cartSlice";
-import { removeCustomer, setCustomer } from "../../redux/slices/customerSlice";
+import { removeCustomer } from "../../redux/slices/customerSlice";
 import CreateOrderModal from "../shared/CreateOrderModal";
 import {
   openOrderTicketWindow,
@@ -68,7 +68,7 @@ const Bill = () => {
 
     const needsTable = customerData.orderType === "DINE_IN" && !customerData.tables?.length;
     if (needsTable) {
-      navigate("/tables", { state: { retainCart: true } });
+      navigate("/app/tables", { state: { retainCart: true } });
       enqueueSnackbar("Please select a table to assign this order", { variant: "info" });
       return;
     }

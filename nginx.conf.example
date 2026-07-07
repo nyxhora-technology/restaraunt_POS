@@ -1,133 +1,99 @@
-﻿# =============================================================================
-# Restro POS — Production Nginx Configuration
-# Place at: /etc/nginx/sites-available/restro
-# Then: ln -s /etc/nginx/sites-available/restro /etc/nginx/sites-enabled/
-# =============================================================================
-#
-# Assumes:
-#   - Frontend build lives at /var/www/restro/dist
-#   - Node API runs on localhost:8000
-#   - SSL certs managed by Certbot (Let's Encrypt)
-#
-# CRITICAL: Without the "try_files $uri /index.html" line, every direct URL
-# visit (e.g. /tables, /orders) returns a 404 on hard refresh.
-# This is the most common production SPA bug.
+# Render this template during deployment with environment substitution.
+# Required variables:
+#   SERVER_NAME, TLS_CERTIFICATE, TLS_CERTIFICATE_KEY, FRONTEND_DIST
 
-# Redirect HTTP → HTTPS
+map $uri $robots_header {
+  default "";
+  ~^/(app|auth)(/|$) "noindex, nofollow";
+}
+
 server {
   listen 80;
-  server_name app.restro.in restro.in;
+  server_name ${SERVER_NAME};
   return 301 https://$host$request_uri;
 }
 
-# Marketing root domain (restro.in) — serve static marketing site
 server {
   listen 443 ssl http2;
-  server_name restro.in www.restro.in;
+  server_name ${SERVER_NAME};
 
-  ssl_certificate     /etc/letsencrypt/live/restro.in/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/restro.in/privkey.pem;
+  ssl_certificate     ${TLS_CERTIFICATE};
+  ssl_certificate_key ${TLS_CERTIFICATE_KEY};
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_ciphers HIGH:!aNULL:!MD5;
 
-  root /var/www/restro-marketing/dist;
+  root ${FRONTEND_DIST};
   index index.html;
 
-  location / {
-    try_files $uri $uri/ /index.html;
-  }
-}
-
-# App subdomain (app.restro.in) — the actual POS
-server {
-  listen 443 ssl http2;
-  server_name app.restro.in;
-
-  ssl_certificate     /etc/letsencrypt/live/app.restro.in/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/app.restro.in/privkey.pem;
-  ssl_protocols TLSv1.2 TLSv1.3;
-  ssl_ciphers HIGH:!aNULL:!MD5;
-
-  # Security headers (Nginx layer — reinforces what Helmet already sets)
+  add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
   add_header X-Frame-Options "SAMEORIGIN" always;
   add_header X-Content-Type-Options "nosniff" always;
   add_header Referrer-Policy "strict-origin-when-cross-origin" always;
   add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+  add_header X-Robots-Tag $robots_header always;
 
-  # ── Frontend (Vite SPA build) ───────────────────────────────────────────
-  # Hashed filenames (e.g. index-ABC123.js) get 1-year immutable cache.
-  # index.html gets no-cache so deploys are instant.
-  location / {
-    root /var/www/restro/dist;
-    # CRITICAL: SPA fallback — without this, /tables gives a 404 on hard refresh
-    try_files $uri $uri/ /index.html;
-  }
-
-  location ~* \.(js|css|woff2?|png|jpg|svg|ico|webp)$ {
-    root /var/www/restro/dist;
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    access_log off;
-  }
-
-  location = /index.html {
-    root /var/www/restro/dist;
-    expires -1;
-    add_header Cache-Control "no-store, no-cache, must-revalidate";
-  }
-
-  # ── API proxy ───────────────────────────────────────────────────────────
   location /api/ {
     proxy_pass http://127.0.0.1:8000;
     proxy_http_version 1.1;
-
-    # WebSocket upgrade (required for Socket.IO)
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-
     proxy_set_header Host              $host;
     proxy_set_header X-Real-IP         $remote_addr;
     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-
-    # Standard REST timeout
     proxy_read_timeout    60s;
     proxy_connect_timeout 10s;
     proxy_send_timeout    60s;
-
-    # Buffer — reduce latency on small API responses
-    proxy_buffering on;
-    proxy_buffer_size 4k;
-    proxy_buffers 8 4k;
   }
 
-  # ── Socket.IO long-lived connections ───────────────────────────────────
-  # Socket.IO uses long-polling before upgrading to WebSocket.
-  # The default 60s read_timeout disconnects idle sockets.
-  # 24h timeout keeps real-time order updates alive all day.
-  location /api/socket.io/ {
+  location /socket.io/ {
     proxy_pass http://127.0.0.1:8000;
     proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
+    proxy_set_header Upgrade           $http_upgrade;
+    proxy_set_header Connection        "upgrade";
     proxy_set_header Host              $host;
     proxy_set_header X-Real-IP         $remote_addr;
     proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
-
-    # Long timeout for persistent socket connections
     proxy_read_timeout 86400s;
     proxy_send_timeout 86400s;
   }
 
-  # ── Health check — accessible without auth ──────────────────────────────
-  location = /api/health {
-    proxy_pass http://127.0.0.1:8000;
+  location ~* \.(js|css|woff2?|png|jpg|jpeg|svg|ico|webp)$ {
+    expires 1y;
     access_log off;
   }
 
-  # ── Block common attack paths ────────────────────────────────────────────
+  location = /index.html {
+    expires -1;
+  }
+
+  location /app {
+    try_files $uri $uri/ /index.html;
+  }
+
+  location /auth {
+    try_files $uri $uri/ /index.html;
+  }
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  location = /home       { return 308 /app; }
+  location = /dashboard  { return 308 /app/dashboard; }
+  location = /dashbord   { return 308 /app/dashboard; }
+  location = /orders     { return 308 /app/orders; }
+  location = /tables     { return 308 /app/tables; }
+  location = /table      { return 308 /app/tables; }
+  location = /menu       { return 308 /app/menu; }
+  location = /inventory  { return 308 /app/inventory; }
+  location = /inventry   { return 308 /app/inventory; }
+  location = /qr         { return 308 /app/qr; }
+  location = /more       { return 308 /app/more; }
+  location = /settings   { return 308 /app/settings; }
+  location = /setting    { return 308 /app/settings; }
+  location = /onboarding { return 308 /app/onboarding; }
+  location = /platform   { return 308 /app/platform; }
+
   location ~* \.(php|asp|aspx|jsp|cgi)$ { return 404; }
   location ~ /\. { deny all; }
-  location = /wp-admin { return 404; }
 }

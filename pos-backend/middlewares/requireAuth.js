@@ -3,6 +3,15 @@ const auth = require("../config/auth");
 const prisma = require("../config/prisma");
 const config = require("../config/config");
 
+const PASSWORD_CHANGE_ALLOWED_PATHS = [
+  "/api/restaurant/context",
+  "/api/restaurant/staff/change-password",
+];
+
+const isPasswordChangeAllowedPath = (req) =>
+  req.originalUrl?.startsWith("/api/auth/") ||
+  PASSWORD_CHANGE_ALLOWED_PATHS.some((path) => req.originalUrl?.startsWith(path));
+
 const loadRequestUser = async (req) => {
   const session = await auth.api.getSession({ headers: req.headers });
   if (!session?.user?.id) throw createHttpError(401, "Unauthorized");
@@ -36,8 +45,13 @@ const loadRequestUser = async (req) => {
         phone: true,
         role: true,
         restaurantId: true,
+        mustChangePassword: true,
       },
     });
+  }
+
+  if (user.mustChangePassword && !isPasswordChangeAllowedPath(req)) {
+    throw createHttpError(403, "Password change required before continuing");
   }
 
   req.session = session.session;

@@ -4,7 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b1114" />
+    <script>
+      (() => {
+        try {
+          const saved = localStorage.getItem("restro-public-theme");
+          const theme =
+            saved === "light" || saved === "dark"
+              ? saved
+              : matchMedia("(prefers-color-scheme: dark)").matches
+                ? "dark"
+                : "light";
+          document.documentElement.dataset.marketingTheme = theme;
+          document.documentElement.style.colorScheme = theme;
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute("content", theme === "dark" ? "#0e1512" : "#f4f2ec");
+        } catch {
+          document.documentElement.dataset.marketingTheme = "light";
+        }
+      })();
+    </script>
     <meta name="description" content="Restro is the modern restaurant POS for faster orders, live kitchen operations, inventory, payments, staff, and QR menus. Free forever plan available." />
+    <meta name="robots" content="__SEO_ROBOTS__" />
 
     <!-- Favicons — all major platforms -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
@@ -15,27 +36,28 @@
 
     <!-- Open Graph / WhatsApp / LinkedIn -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://restro.in" />
+    <meta data-seo-absolute property="og:url" content="__PUBLIC_SITE_URL__/" />
     <meta property="og:title" content="Restro — Restaurant operations, in one place" />
     <meta property="og:description" content="Run orders, tables, kitchen, payments, inventory, and staff from one modern restaurant platform. Free forever plan." />
-    <meta property="og:image" content="https://restro.in/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta data-seo-absolute property="og:image" content="__PUBLIC_SITE_URL__/favicon.png" />
+    <meta property="og:image:width" content="1024" />
+    <meta property="og:image:height" content="1024" />
+    <meta property="og:image:alt" content="Restro restaurant POS logo" />
     <meta property="og:site_name" content="Restro" />
     <meta property="og:locale" content="en_IN" />
 
     <!-- Twitter / X -->
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Restro — Restaurant POS & Operations" />
     <meta name="twitter:description" content="Run your restaurant without the chaos. Orders, kitchen, payments, inventory — one screen." />
-    <meta name="twitter:image" content="https://restro.in/og-image.png" />
+    <meta data-seo-absolute name="twitter:image" content="__PUBLIC_SITE_URL__/favicon.png" />
 
     <!-- Canonical -->
-    <link rel="canonical" href="https://restro.in" />
+    <link data-seo-absolute rel="canonical" href="__PUBLIC_SITE_URL__/" />
 
     <title>Restro | Modern Restaurant POS &amp; Operations — Free Forever Plan</title>
 
-    <!-- Rich structured data: SoftwareApplication with pricing + rating -->
+    <!-- Rich structured data: SoftwareApplication with plan pricing -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -43,7 +65,7 @@
         "name": "Restro",
         "applicationCategory": "BusinessApplication",
         "operatingSystem": "Web",
-        "url": "https://restro.in",
+        "url": "__PUBLIC_SITE_URL__/",
         "description": "A modern restaurant POS and operations platform for orders, tables, kitchen, payments, inventory, staff, and QR menus.",
         "offers": [
           {
@@ -61,18 +83,23 @@
             "billingIncrement": "P1M",
             "description": "Unlimited orders, inventory, QR menus, 10 staff, 90-day analytics, CSV export"
           }
-        ],
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": "4.8",
-          "reviewCount": "47",
-          "bestRating": "5"
-        }
+        ]
       }
     </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <main>
+        <h1>Restro restaurant POS and operations platform</h1>
+        <p>
+          Manage restaurant orders, tables, kitchen workflows, payments,
+          inventory, staff, and QR menus from one connected platform.
+        </p>
+        <p><a href="/auth?tab=register">Create a free Restro account</a></p>
+        <p><a href="/terms">Terms of Service</a> · <a href="/privacy">Privacy Policy</a></p>
+      </main>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

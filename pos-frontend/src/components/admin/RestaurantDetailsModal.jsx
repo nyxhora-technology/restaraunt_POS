@@ -18,8 +18,8 @@ const statusStyles = {
 
 const Detail = ({ label, value }) => (
   <div>
-    <p className="text-xs uppercase tracking-wider text-[#777]">{label}</p>
-    <p className="text-[#f5f5f5] mt-1 break-words">{value || "Not provided"}</p>
+    <p className="text-xs font-semibold uppercase tracking-wider text-[var(--dash-muted)]">{label}</p>
+    <p className="text-[var(--dash-text)] mt-1 break-words font-medium">{value || "Not provided"}</p>
   </div>
 );
 
@@ -66,13 +66,13 @@ const RestaurantDetailsModal = ({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="dashboard-detail-modal w-full max-w-[920px] max-h-[90vh] overflow-y-auto scrollbar-hide rounded-xl shadow-2xl">
-        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--dash-border)] bg-[var(--dash-surface)] px-7 py-5">
+      <div className="dashboard-detail-modal w-full max-w-[920px] max-h-[90vh] overflow-y-auto scrollbar-hide rounded-xl shadow-2xl bg-[var(--dash-bg)] border border-[var(--dash-border)]">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--dash-border)] bg-[var(--dash-surface)] px-7 py-5 shadow-sm">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-[var(--dash-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--dash-primary)]">
               Restaurant Details
             </p>
-            <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-text)]">
+            <h2 className="mt-1 text-2xl font-bold text-[var(--dash-text)]">
               {restaurant?.name || "Loading..."}
             </h2>
           </div>
@@ -85,27 +85,27 @@ const RestaurantDetailsModal = ({
         </div>
 
         {restaurantQuery.isLoading ? (
-          <p className="p-10 text-center text-[#ababab]">
+          <p className="p-10 text-center text-[var(--dash-muted)]">
             Loading restaurant details...
           </p>
         ) : restaurantQuery.isError ? (
-          <p className="p-10 text-center text-red-400">
+          <p className="p-10 text-center text-red-500 font-medium">
             Unable to load restaurant details.
           </p>
         ) : (
           <div className="p-7">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#262626] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4 dashboard-panel p-5">
               <div>
                 <span
                   className={`inline-flex rounded-full px-3 py-1 text-xs font-bold tracking-wide ${statusStyles[restaurant.status]}`}
                 >
                   {restaurant.status}
                 </span>
-                <p className="mt-3 text-sm text-[#ababab]">
+                <p className="mt-3 text-sm text-[var(--dash-muted)] font-medium">
                   Registered {formatDateAndTime(restaurant.createdAt)}
                 </p>
                 <div className="mt-4 flex items-center gap-3">
-                  <span className="text-xs font-semibold text-[#777] uppercase tracking-wider">
+                  <span className="text-xs font-semibold text-[var(--dash-muted)] uppercase tracking-wider">
                     Plan:
                   </span>
                   <select
@@ -117,7 +117,7 @@ const RestaurantDetailsModal = ({
                       })
                     }
                     disabled={planMutation.isPending}
-                    className="bg-[#1f1f1f] border border-[#383838] text-white text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-[#02ca3a] disabled:opacity-50"
+                    className="bg-[var(--dash-surface-muted)] border border-[var(--dash-border)] text-[var(--dash-text)] text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--dash-primary)] transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
                   >
                     <option value="STARTER">Starter</option>
                     <option value="PROFESSIONAL">Professional</option>
@@ -159,39 +159,39 @@ const RestaurantDetailsModal = ({
             </div>
 
             {restaurant.rejectionReason && (
-              <div className="mt-5 rounded-lg border border-red-900 bg-[#352525] p-4">
-                <p className="text-xs uppercase tracking-wider text-red-300">
+              <div className="mt-5 rounded-lg border border-red-500/30 bg-red-500/10 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-400">
                   Rejection reason
                 </p>
-                <p className="mt-1 text-red-100">
+                <p className="mt-1 text-[var(--dash-text)] font-medium">
                   {restaurant.rejectionReason}
                 </p>
               </div>
             )}
 
-            <div className="mt-6 grid grid-cols-4 gap-4">
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                ["Staff", restaurant.staff.length, "#5b45b0"],
-                ["Tables", restaurant._count.tables, "#7f167f"],
-                ["Menu Items", restaurant._count.menuItems, "#285430"],
-                ["Orders", restaurant._count.orders, "#025cca"],
+                ["Staff", restaurant.staff.length, "#8b5cf6"],
+                ["Tables", restaurant._count.tables, "#ec4899"],
+                ["Menu Items", restaurant._count.menuItems, "#10b981"],
+                ["Orders", restaurant._count.orders, "var(--dash-primary)"],
               ].map(([label, value, color]) => (
                 <div
                   key={label}
-                  className="rounded-lg p-4"
-                  style={{ backgroundColor: color }}
+                  className="dashboard-panel p-4 border-l-4"
+                  style={{ borderLeftColor: color }}
                 >
-                  <p className="text-xs uppercase tracking-wider text-white opacity-80">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[var(--dash-muted)]">
                     {label}
                   </p>
-                  <p className="mt-2 text-2xl font-bold text-white">{value}</p>
+                  <p className="mt-2 text-2xl font-bold text-[var(--dash-text)]">{value}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-6">
-              <section className="rounded-xl bg-[#262626] p-5">
-                <h3 className="mb-5 text-lg font-semibold text-white">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <section className="dashboard-panel p-6">
+                <h3 className="mb-5 text-lg font-bold text-[var(--dash-text)]">
                   Restaurant Information
                 </h3>
                 <div className="grid grid-cols-2 gap-5">
@@ -211,8 +211,8 @@ const RestaurantDetailsModal = ({
                 </div>
               </section>
 
-              <section className="rounded-xl bg-[#262626] p-5">
-                <h3 className="mb-5 text-lg font-semibold text-white">Owner</h3>
+              <section className="dashboard-panel p-6">
+                <h3 className="mb-5 text-lg font-bold text-[var(--dash-text)]">Owner</h3>
                 <div className="grid grid-cols-2 gap-5">
                   <Detail label="Name" value={restaurant.owner?.name} />
                   <Detail label="Phone" value={restaurant.owner?.phone} />
@@ -220,26 +220,26 @@ const RestaurantDetailsModal = ({
                     <Detail label="Email" value={restaurant.owner?.email} />
                   </div>
                 </div>
-                <h3 className="mb-3 mt-7 text-lg font-semibold text-white">
+                <h3 className="mb-4 mt-8 text-lg font-bold text-[var(--dash-text)] border-t border-[var(--dash-border)] pt-6">
                   Staff ({restaurant.staff.length})
                 </h3>
-                <div className="max-h-[180px] overflow-y-auto scrollbar-hide">
+                <div className="max-h-[180px] overflow-y-auto scrollbar-hide pr-2">
                   {restaurant.staff.map((staff) => (
                     <div
                       key={staff.id}
-                      className="flex justify-between border-b border-[#383838] py-3"
+                      className="flex items-center justify-between border-b border-[var(--dash-border)] py-3 last:border-0"
                     >
                       <div>
-                        <p className="text-white">{staff.name}</p>
-                        <p className="text-xs text-[#ababab]">{staff.email}</p>
+                        <p className="text-[var(--dash-text)] font-medium">{staff.name}</p>
+                        <p className="text-xs text-[var(--dash-muted)] mt-0.5">{staff.email}</p>
                       </div>
-                      <span className="text-xs font-semibold text-yellow-400">
+                      <span className="text-[11px] px-2 py-1 bg-[var(--dash-surface-muted)] rounded-md font-semibold text-[var(--dash-primary)]">
                         {staff.role}
                       </span>
                     </div>
                   ))}
                   {!restaurant.staff.length && (
-                    <p className="text-sm text-[#777]">No staff accounts.</p>
+                    <p className="text-sm text-[var(--dash-muted)] italic">No staff accounts.</p>
                   )}
                 </div>
               </section>

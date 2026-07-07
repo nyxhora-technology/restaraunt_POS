@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
-import { io } from "socket.io-client";
 import { useDispatch } from "react-redux";
 import { setRestaurant } from "../redux/slices/userSlice";
 
@@ -17,41 +16,54 @@ const useRealtimeSync = () => {
   useEffect(() => {
     if (!isAuth) return undefined;
 
-    const socket = io(import.meta.env.VITE_BACKEND_URL, {
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-    });
-    const refreshOrders = () => {
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      queryClient.invalidateQueries({ queryKey: ["payment-history"] });
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
-    };
-    const refreshTables = () => {
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
-      queryClient.invalidateQueries({ queryKey: ["dining-areas"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    };
-    const refreshMenu = () =>
-      queryClient.invalidateQueries({ queryKey: ["menu"] });
-    const refreshRestaurantStatus = (restaurant) => {
-      queryClient.invalidateQueries({ queryKey: ["platform-restaurants"] });
-      queryClient.invalidateQueries({ queryKey: ["platform-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["my-restaurant-status"] });
-      if (restaurantId && restaurant?.id === restaurantId) {
-        dispatch(setRestaurant(restaurant));
-      }
+    let socket;
+    let cancelled = false;
+
+    const connect = async () => {
+      const { io } = await import("socket.io-client");
+      if (cancelled) return;
+
+      socket = io(import.meta.env.VITE_BACKEND_URL || window.location.origin, {
+        withCredentials: true,
+        transports: ["websocket", "polling"],
+      });
+      const refreshOrders = () => {
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+        queryClient.invalidateQueries({ queryKey: ["payment-history"] });
+        queryClient.invalidateQueries({ queryKey: ["tables"] });
+      };
+      const refreshTables = () => {
+        queryClient.invalidateQueries({ queryKey: ["tables"] });
+        queryClient.invalidateQueries({ queryKey: ["dining-areas"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      };
+      const refreshMenu = () =>
+        queryClient.invalidateQueries({ queryKey: ["menu"] });
+      const refreshRestaurantStatus = (restaurant) => {
+        queryClient.invalidateQueries({ queryKey: ["platform-restaurants"] });
+        queryClient.invalidateQueries({ queryKey: ["platform-stats"] });
+        queryClient.invalidateQueries({ queryKey: ["my-restaurant-status"] });
+        if (restaurantId && restaurant?.id === restaurantId) {
+          dispatch(setRestaurant(restaurant));
+        }
+      };
+
+      socket.on("order:new", refreshOrders);
+      socket.on("order:updated", refreshOrders);
+      socket.on("order:completed", refreshOrders);
+      socket.on("table:updated", refreshTables);
+      socket.on("dining-area:updated", refreshTables);
+      socket.on("menu:updated", refreshMenu);
+      socket.on("restaurant:status", refreshRestaurantStatus);
     };
 
-    socket.on("order:new", refreshOrders);
-    socket.on("order:updated", refreshOrders);
-    socket.on("order:completed", refreshOrders);
-    socket.on("table:updated", refreshTables);
-    socket.on("dining-area:updated", refreshTables);
-    socket.on("menu:updated", refreshMenu);
-    socket.on("restaurant:status", refreshRestaurantStatus);
+    connect();
 
-    return () => socket.disconnect();
+    return () => {
+      cancelled = true;
+      socket?.disconnect();
+    };
   }, [dispatch, isAuth, queryClient, restaurantId, restaurantStatus]);
 };
 

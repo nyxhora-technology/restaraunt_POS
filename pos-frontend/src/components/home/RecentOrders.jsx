@@ -297,7 +297,7 @@ const RecentOrders = ({ search = "" }) => {
                       >
                         <MdVisibility /> View details
                       </button>
-                      <button type="button" onClick={() => navigate("/orders")}>
+                      <button type="button" onClick={() => navigate("/app/orders")}>
                         <MdReceiptLong /> Open all orders
                       </button>
                     </div>
@@ -328,7 +328,7 @@ const RecentOrders = ({ search = "" }) => {
       {!isLoading && !isError && filteredOrders.length > 0 && (
         <button
           type="button"
-          onClick={() => navigate("/orders")}
+          onClick={() => navigate("/app/orders")}
           className="dashboard-orders-footer"
         >
           View all orders <span>→</span>

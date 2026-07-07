@@ -9,6 +9,7 @@ import {
 } from "../../https";
 import useRoleDashboard from "../../hooks/useRoleDashboard";
 import useRole from "../../hooks/useRole";
+import PlanLimitBadge from "../shared/PlanLimitBadge";
 
 const StaffPanel = () => {
   const { canManageStaff } = useRoleDashboard();
@@ -62,7 +63,10 @@ const StaffPanel = () => {
   return (
     <div className="container mx-auto grid grid-cols-2 gap-5 text-[var(--dash-text)]">
       <div className="dashboard-management-panel p-5 rounded-lg">
-        <h2 className="text-xl font-semibold mb-1">Staff</h2>
+        <div className="flex items-center gap-3 mb-1">
+          <h2 className="text-xl font-semibold">Staff</h2>
+          <PlanLimitBadge resource="staff_seats" warnAt={3} />
+        </div>
         <p className="text-sm text-[var(--dash-muted)] mb-4">
           {isOwner
             ? "Manage all restaurant staff."
