@@ -59,7 +59,7 @@ export const removeStaff = (userId) =>
   axiosWrapper.delete(`/api/restaurant/staff/${userId}`);
 
 // Table Endpoints
-export const addTable = (data) => axiosWrapper.post("/api/table/", data);
+export const addTable = (data) => axiosWrapper.post("/api/table", data);
 export const getTables = (params) => axiosWrapper.get("/api/table", { params });
 export const updateTable = ({ tableId, ...tableData }) =>
   axiosWrapper.put(`/api/table/${tableId}`, tableData);
