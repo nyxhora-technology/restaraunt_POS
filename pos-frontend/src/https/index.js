@@ -102,7 +102,7 @@ export const recordReceiptPrint = ({ orderId, copyType }) =>
 export const getPaymentHistory = () => axiosWrapper.get("/api/payment/history");
 
 // Order Endpoints
-export const addOrder = (data) => axiosWrapper.post("/api/order/", data);
+export const addOrder = (data) => axiosWrapper.post("/api/order", data);
 export const getOrders = (params) => axiosWrapper.get("/api/order", { params });
 export const getKitchenOrders = () => axiosWrapper.get("/api/order/kitchen");
 export const getDashboard = () => axiosWrapper.get("/api/order/dashboard");
