@@ -26,13 +26,11 @@ const NotificationsPanel = ({
       canViewInventoryAlerts
         ? getInventoryAlerts()
         : Promise.resolve({ data: { data: [], unreadCount: 0 } }),
-    enabled: Boolean(
-      isOpen &&
-        user.isAuth &&
-        user.restaurantId &&
-        canViewInventoryAlerts,
-    ),
+    enabled: Boolean(user.isAuth && user.restaurantId && canViewInventoryAlerts),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
   });
+
 
   const markReadMutation = useMutation({
     mutationFn: markAlertRead,

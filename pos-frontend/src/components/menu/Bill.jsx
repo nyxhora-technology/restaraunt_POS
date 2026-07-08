@@ -51,7 +51,7 @@ const Bill = () => {
           variant: billOpened ? "success" : "warning",
         },
       );
-      navigate(APP_ROUTES.dashboard, { replace: true });
+      navigate(APP_ROUTES.home, { replace: true });
     },
     onError: (error, { printWindow }) => {
       showOrderTicketError(printWindow);

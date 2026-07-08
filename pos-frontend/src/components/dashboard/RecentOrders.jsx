@@ -18,15 +18,13 @@ import CustomSelect from "../shared/CustomSelect";
 
 const transitions = {
   OWNER: {
-    PENDING: ["ACCEPTED", "REJECTED", "CANCELLED"],
-    ACCEPTED: ["PREPARING", "READY", "CANCELLED"],
+    PENDING: ["PREPARING", "CANCELLED"],
     PREPARING: ["READY", "CANCELLED"],
     READY: ["SERVED", "CANCELLED"],
     SERVED: ["CANCELLED"],
   },
   MANAGER: {
-    PENDING: ["ACCEPTED", "REJECTED", "CANCELLED"],
-    ACCEPTED: ["PREPARING", "READY", "CANCELLED"],
+    PENDING: ["PREPARING", "CANCELLED"],
     PREPARING: ["READY", "CANCELLED"],
     READY: ["SERVED", "CANCELLED"],
     SERVED: ["CANCELLED"],
@@ -34,6 +32,7 @@ const transitions = {
   CASHIER: { PENDING: ["CANCELLED"], READY: ["SERVED"] },
   WAITER: { PENDING: ["CANCELLED"], READY: ["SERVED"] },
 };
+
 
 const RecentOrders = () => {
   const queryClient = useQueryClient();

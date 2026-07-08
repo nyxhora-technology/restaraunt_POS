@@ -535,22 +535,19 @@ const getDashboard = async (req, res, next) => {
 
 const allowedTransitions = {
   OWNER: {
-    PENDING: ["ACCEPTED", "REJECTED", "CANCELLED"],
-    ACCEPTED: ["PREPARING", "READY", "CANCELLED"],
+    PENDING: ["PREPARING", "CANCELLED"],
     PREPARING: ["READY", "CANCELLED"],
     READY: ["SERVED", "CANCELLED"],
     SERVED: ["CANCELLED"],
   },
   MANAGER: {
-    PENDING: ["ACCEPTED", "REJECTED", "CANCELLED"],
-    ACCEPTED: ["PREPARING", "READY", "CANCELLED"],
+    PENDING: ["PREPARING", "CANCELLED"],
     PREPARING: ["READY", "CANCELLED"],
     READY: ["SERVED", "CANCELLED"],
     SERVED: ["CANCELLED"],
   },
   KITCHEN: {
-    PENDING: ["ACCEPTED", "REJECTED"],
-    ACCEPTED: ["PREPARING", "READY"],
+    PENDING: ["PREPARING"],
     PREPARING: ["READY"],
   },
   CASHIER: {
@@ -584,6 +581,7 @@ const updateOrderStatus = async (req, res, next) => {
 
     const data = { orderStatus: nextStatus };
     if (nextStatus === "ACCEPTED") data.kitchenAcceptedAt = new Date();
+    if (nextStatus === "PREPARING" && !existing.kitchenAcceptedAt) data.kitchenAcceptedAt = new Date();
     if (nextStatus === "READY") data.kitchenReadyAt = new Date();
     if (req.body.kitchenNote !== undefined)
       data.kitchenNote = req.body.kitchenNote;
@@ -594,7 +592,7 @@ const updateOrderStatus = async (req, res, next) => {
         data,
         include: orderInclude,
       });
-      if (existing.tableId && ["REJECTED", "CANCELLED"].includes(nextStatus)) {
+      if (existing.tableId && ["REJECTED", "CANCELLED", "COMPLETED"].includes(nextStatus)) {
         await tx.table.updateMany({
           where: {
             restaurantId: req.restaurantId,
@@ -640,6 +638,7 @@ const updateOrderStatus = async (req, res, next) => {
     next(error);
   }
 };
+
 
 const updateOrderItems = async (req, res, next) => {
   try {
@@ -732,6 +731,34 @@ const updateOrderItems = async (req, res, next) => {
       };
     });
 
+    // Build a diff of changed quantities so the kitchen gets precise info
+    const prevByKey = new Map(
+      existingOrder.items.map((item) => [
+        `${item.menuItemId}:${item.variantId || "base"}`,
+        item,
+      ]),
+    );
+    const nextByKey = new Map(
+      normalizedItems.map((item) => [
+        `${item.menuItemId}:${item.variantId || "base"}`,
+        item,
+      ]),
+    );
+    const changedItems = [];
+    for (const [key, next] of nextByKey.entries()) {
+      const prev = prevByKey.get(key);
+      if (!prev) {
+        changedItems.push({ name: next.name, oldQty: 0, newQty: next.quantity, change: "added" });
+      } else if (prev.quantity !== next.quantity) {
+        changedItems.push({ name: next.name, oldQty: prev.quantity, newQty: next.quantity, change: "modified" });
+      }
+    }
+    for (const [key, prev] of prevByKey.entries()) {
+      if (!nextByKey.has(key)) {
+        changedItems.push({ name: prev.name, oldQty: prev.quantity, newQty: 0, change: "removed" });
+      }
+    }
+
     const subtotal = roundMoney(
       normalizedItems.reduce(
         (sum, item) => sum + item.price * item.quantity,
@@ -765,6 +792,18 @@ const updateOrderItems = async (req, res, next) => {
     });
 
     emitOrder(req.restaurantId, "order:updated", order);
+
+    // Separate event so kitchen display can distinguish item changes from status changes
+    if (changedItems.length > 0) {
+      getIo()
+        .to(`restaurant:${req.restaurantId}`)
+        .emit("order:items-updated", {
+          id: order.id,
+          orderNo: order.orderNo,
+          changedItems,
+        });
+    }
+
     res.json({
       success: true,
       data: serializeOrderForRole(order, req.user.role),
@@ -773,6 +812,7 @@ const updateOrderItems = async (req, res, next) => {
     next(error);
   }
 };
+
 
 /**
  * GET /api/order/usage

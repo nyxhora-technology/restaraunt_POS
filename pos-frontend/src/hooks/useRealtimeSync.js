@@ -48,14 +48,32 @@ const useRealtimeSync = () => {
           dispatch(setRestaurant(restaurant));
         }
       };
+      const refreshInventoryAlerts = () => {
+        queryClient.invalidateQueries({ queryKey: ["inventory-alerts"] });
+      };
+      const refreshInventory = () => {
+        queryClient.invalidateQueries({ queryKey: ["inventory"] });
+        queryClient.invalidateQueries({ queryKey: ["inventory-alerts"] });
+      };
+      const handleOrderItemsUpdated = (payload) => {
+        // Refresh orders so kitchen sees latest item counts
+        queryClient.invalidateQueries({ queryKey: ["orders"] });
+        // Dispatch a custom DOM event so KitchenDashboard can play audio + show diff
+        window.dispatchEvent(
+          new CustomEvent("kitchen:order-items-updated", { detail: payload }),
+        );
+      };
 
       socket.on("order:new", refreshOrders);
       socket.on("order:updated", refreshOrders);
       socket.on("order:completed", refreshOrders);
+      socket.on("order:items-updated", handleOrderItemsUpdated);
       socket.on("table:updated", refreshTables);
       socket.on("dining-area:updated", refreshTables);
       socket.on("menu:updated", refreshMenu);
       socket.on("restaurant:status", refreshRestaurantStatus);
+      socket.on("inventory:alert", refreshInventoryAlerts);
+      socket.on("inventory:updated", refreshInventory);
     };
 
     connect();
@@ -68,3 +86,4 @@ const useRealtimeSync = () => {
 };
 
 export default useRealtimeSync;
+

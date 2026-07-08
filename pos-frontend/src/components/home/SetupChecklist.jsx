@@ -58,8 +58,9 @@ const SetupChecklist = () => {
   if (dismissed) return null;
 
   // Derive completion states
-  const categories = menuData?.data?.data?.categories || [];
-  const allItems = categories.flatMap((c) => c.items || []);
+  // API returns: { data: { data: Category[] } } where each Category has menuItems[]
+  const categories = menuData?.data?.data || [];
+  const allItems = categories.flatMap((c) => c.menuItems || []);
   const tables = tableData?.data?.data || [];
   const staff = staffData?.data?.data || [];
   const orders = ordersData?.data?.data || [];

@@ -20,6 +20,13 @@ const TableCard = ({
   const area = table.area;
   const isAvailable = table.status === "AVAILABLE";
   const nextReservation = table.reservations?.[0];
+
+  // Flag: table is technically available but has a reservation in < 2 hours
+  const hasImminentReservation =
+    isAvailable &&
+    nextReservation &&
+    new Date(nextReservation.reservedAt).getTime() <= Date.now() + 2 * 60 * 60 * 1000;
+
   const isSelectable = isAvailable && !disabled;
 
   const helperText = selected
@@ -27,9 +34,11 @@ const TableCard = ({
     : disabledReason
       ? disabledReason
       : isAvailable
-        ? nextReservation
-          ? `Reserved ${new Date(nextReservation.reservedAt).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
-          : `Fits ${minSeats}–${maxSeats} guests`
+        ? hasImminentReservation
+          ? `Reserved at ${new Date(nextReservation.reservedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} — select with caution`
+          : nextReservation
+            ? `Reserved ${new Date(nextReservation.reservedAt).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`
+            : `Fits ${minSeats}–${maxSeats} guests`
         : table.currentOrder
           ? `Order #${table.currentOrder.orderNo} · ${table.currentOrder.customerName}`
           : table.status === "CLEANING"
@@ -45,7 +54,7 @@ const TableCard = ({
         isSelectable ? "is-selectable" : "is-disabled"
       } ${selected ? "is-selected" : ""} ${
         TABLE_STATUS_TONES[table.status] || "is-out-of-service"
-      }`}
+      } ${hasImminentReservation ? "ring-2 ring-orange-400 ring-offset-1 ring-offset-transparent" : ""}`}
       aria-pressed={selected}
       aria-label={`${getTableLabel(table)}, ${table.status}`}
     >
@@ -58,6 +67,10 @@ const TableCard = ({
         </div>
         {selected ? (
           <span className="dashboard-selected-pill">Selected</span>
+        ) : hasImminentReservation ? (
+          <span className="text-xs font-bold bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-full px-2 py-0.5 shrink-0">
+            Reserved Soon
+          </span>
         ) : (
           <TableStatusBadge status={table.status} />
         )}
@@ -90,3 +103,4 @@ const TableCard = ({
 };
 
 export default TableCard;
+

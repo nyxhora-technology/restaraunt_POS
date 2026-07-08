@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { MdKeyboardArrowDown, MdCheck } from "react-icons/md";
 
 const CustomSelect = ({
-  value,
+  value: propValue,
+  defaultValue,
   onChange,
   options = [],
   placeholder = "Select...",
@@ -12,7 +13,10 @@ const CustomSelect = ({
   required = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [internalValue, setInternalValue] = useState(defaultValue || "");
   const containerRef = useRef(null);
+
+  const value = propValue !== undefined ? propValue : internalValue;
 
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -29,6 +33,9 @@ const CustomSelect = ({
   }, [isOpen]);
 
   const handleSelect = (option) => {
+    if (propValue === undefined) {
+      setInternalValue(option.value);
+    }
     if (onChange) {
       onChange({
         target: { name, value: option.value },
@@ -63,8 +70,8 @@ const CustomSelect = ({
         />
       </button>
 
-      {/* Hidden native input for required validation */}
-      {required && (
+      {/* Hidden native input for required validation and FormData submission */}
+      {name && (
         <input
           type="text"
           name={name}

@@ -40,6 +40,7 @@ const Tables = () => {
   const [selectedIds, setSelectedIds] = useState([]);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [view, setView] = useState("tables");
+  const [showDemoted, setShowDemoted] = useState(false);
   const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
@@ -101,6 +102,19 @@ const Tables = () => {
         );
     });
   }, [areaId, search, status, tables]);
+
+  // Split into fitting vs demoted when a guest count is set
+  const { fittingTables, demotedTables } = useMemo(() => {
+    if (!guests || guests < 1) return { fittingTables: visibleTables, demotedTables: [] };
+    const fitting = [];
+    const demoted = [];
+    for (const table of visibleTables) {
+      const tooSmall = table.status === "AVAILABLE" && table.seats < guests && !table.combinationGroup;
+      if (tooSmall) demoted.push(table);
+      else fitting.push(table);
+    }
+    return { fittingTables: fitting, demotedTables: demoted };
+  }, [visibleTables, guests]);
 
   const statusCounts = useMemo(
     () =>
@@ -402,7 +416,7 @@ const Tables = () => {
                     setAreaId("ALL");
                     setSearch("");
                   } else {
-                    navigate("/app/dashboard");
+                    navigate("/app");
                   }
                 }}
                 className="dashboard-secondary-button px-4 py-3"
@@ -411,18 +425,47 @@ const Tables = () => {
               </button>
             </div>
           ) : (
-            <div className="dashboard-live-table-grid">
-              {visibleTables.map((table) => (
-                <TableCard
-                  key={table.id}
-                  table={table}
-                  selected={selectedIds.includes(table.id)}
-                  disabled={Boolean(getDisabledReason(table))}
-                  disabledReason={getDisabledReason(table)}
-                  onToggle={toggleTable}
-                />
-              ))}
-            </div>
+            <>
+              <div className="dashboard-live-table-grid">
+                {fittingTables.map((table) => (
+                  <TableCard
+                    key={table.id}
+                    table={table}
+                    selected={selectedIds.includes(table.id)}
+                    disabled={Boolean(getDisabledReason(table))}
+                    disabledReason={getDisabledReason(table)}
+                    onToggle={toggleTable}
+                  />
+                ))}
+              </div>
+
+              {demotedTables.length > 0 && (
+                <div className="mt-6">
+                  <button
+                    type="button"
+                    onClick={() => setShowDemoted((s) => !s)}
+                    className="flex items-center gap-2 text-sm text-[var(--dash-muted)] hover:text-[var(--dash-text)] transition-colors mb-3"
+                  >
+                    <span className={`transition-transform ${showDemoted ? "rotate-90" : ""}`}>▶</span>
+                    {showDemoted ? "Hide" : "Show"} {demotedTables.length} table{demotedTables.length > 1 ? "s" : ""} too small for {guests} guests
+                  </button>
+                  {showDemoted && (
+                    <div className="dashboard-live-table-grid opacity-40 pointer-events-none select-none">
+                      {demotedTables.map((table) => (
+                        <TableCard
+                          key={table.id}
+                          table={table}
+                          selected={false}
+                          disabled
+                          disabledReason={`Only ${table.seats} seat${table.seats !== 1 ? "s" : ""} — too small`}
+                          onToggle={undefined}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
 
           {selectedTables.length > 0 && (

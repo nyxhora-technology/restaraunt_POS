@@ -208,31 +208,42 @@ const TableFormModal = ({ isOpen, onClose, table = null }) => {
         <div className="grid gap-4 sm:grid-cols-2">
           <label>
             <span className="dashboard-modal-label">Table shape</span>
-            <div className="dashboard-modal-field">
-              <CustomSelect
-                className="w-full"
-                name="shape"
-                value={form.shape}
-                onChange={updateField}
-                options={Object.entries(SHAPE_LABELS).map(([value, label]) => ({ value, label }))}
-              />
+            <div className="flex gap-2 flex-wrap mt-1">
+              {Object.entries(SHAPE_LABELS).map(([shapeValue, shapeLabel]) => (
+                <button
+                  key={shapeValue}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, shape: shapeValue }))}
+                  className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                    form.shape === shapeValue
+                      ? "border-[var(--dash-primary)] bg-[var(--dash-primary)]/10 text-[var(--dash-primary)]"
+                      : "border-[var(--dash-border)] text-[var(--dash-muted)] hover:border-[var(--dash-text)] hover:text-[var(--dash-text)]"
+                  }`}
+                >
+                  {shapeLabel}
+                </button>
+              ))}
             </div>
           </label>
           {isEditing && (
             <label>
               <span className="dashboard-modal-label">Operational status</span>
-              <div className="dashboard-modal-field">
-                <CustomSelect
-                  className="w-full"
-                  name="status"
-                  value={form.status}
-                  onChange={updateField}
-                  disabled={table.status === "OCCUPIED"}
-                  options={getEditableStatuses(table.status).map((status) => ({
-                    value: status,
-                    label: TABLE_STATUS_LABELS[status]
-                  }))}
-                />
+              <div className="flex gap-2 flex-wrap mt-1">
+                {getEditableStatuses(table.status).map((statusValue) => (
+                  <button
+                    key={statusValue}
+                    type="button"
+                    disabled={table.status === "OCCUPIED"}
+                    onClick={() => setForm((f) => ({ ...f, status: statusValue }))}
+                    className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                      form.status === statusValue
+                        ? "border-[var(--dash-primary)] bg-[var(--dash-primary)]/10 text-[var(--dash-primary)]"
+                        : "border-[var(--dash-border)] text-[var(--dash-muted)] hover:border-[var(--dash-text)] hover:text-[var(--dash-text)]"
+                    }`}
+                  >
+                    {TABLE_STATUS_LABELS[statusValue]}
+                  </button>
+                ))}
               </div>
             </label>
           )}

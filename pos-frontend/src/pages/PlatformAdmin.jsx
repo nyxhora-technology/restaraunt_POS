@@ -38,8 +38,10 @@ const PlatformAdmin = () => {
   const { theme } = useDashboardPreferences();
 
   useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
     document.documentElement.style.colorScheme = theme;
     return () => {
+      document.documentElement.removeAttribute("data-theme");
       document.documentElement.style.removeProperty("color-scheme");
     };
   }, [theme]);

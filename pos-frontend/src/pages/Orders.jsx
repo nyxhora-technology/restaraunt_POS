@@ -128,7 +128,7 @@ const Orders = () => {
   const statusCounts = useMemo(
     () => ({
       active: orders.filter((order) =>
-        ["PENDING", "ACCEPTED", "PREPARING"].includes(order.orderStatus),
+        ["PENDING", "PREPARING"].includes(order.orderStatus),
       ).length,
       ready: orders.filter((order) => order.orderStatus === "READY").length,
       completed: orders.filter((order) => order.orderStatus === "COMPLETED")
@@ -143,7 +143,7 @@ const Orders = () => {
       const matchesStatus =
         status === "all" ||
         (status === "progress" &&
-          ["PENDING", "ACCEPTED", "PREPARING"].includes(order.orderStatus)) ||
+          ["PENDING", "PREPARING"].includes(order.orderStatus)) ||
         (status === "ready" && order.orderStatus === "READY") ||
         (status === "completed" && order.orderStatus === "COMPLETED");
       if (!matchesStatus) return false;

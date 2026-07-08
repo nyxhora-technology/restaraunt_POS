@@ -44,6 +44,16 @@ const checkAndFireAlerts = async (item, restaurantId) => {
   if (!status.alertLevel) return;
   const level = status.alertLevel;
 
+  // Only fire if there's no unread alert at this level already (threshold-crossing dedup)
+  const existingUnread = await prisma.inventoryAlert.findFirst({
+    where: {
+      inventoryItemId: item.id,
+      level,
+      isRead: false,
+    },
+  });
+  if (existingUnread) return; // Already alerted, don't spam
+
   const message =
     level === "CRITICAL"
       ? `🔴 ${item.name} is critically low — only ${item.currentStock.toFixed(1)} ${item.unit} left (${pct.toFixed(0)}%)`
@@ -61,6 +71,7 @@ const checkAndFireAlerts = async (item, restaurantId) => {
     createdAt: alert.createdAt,
   });
 };
+
 
 const checkExpiryAlerts = async (item, restaurantId) => {
   if (!item.expiryDate) return;

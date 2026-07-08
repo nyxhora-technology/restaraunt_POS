@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { addDiningArea, getErrorMessage, updateDiningArea } from "../../https";
 import Modal from "../shared/Modal";
-import CustomSelect from "../shared/CustomSelect";
 import { CLIMATE_LABELS, EXPERIENCE_LABELS } from "./tableOptions";
+
 
 const createInitialForm = (area) => ({
   name: area?.name ?? "",
@@ -117,36 +117,44 @@ const DiningAreaModal = ({ isOpen, onClose, area = null }) => {
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label>
+          <div>
             <span className="dashboard-modal-label">Climate</span>
-            <div className="dashboard-modal-field">
-              <CustomSelect
-                className="w-full"
-                name="climate"
-                value={form.climate}
-                onChange={updateField}
-                options={Object.entries(CLIMATE_LABELS).map(([value, label]) => ({
-                  value,
-                  label
-                }))}
-              />
+            <div className="flex gap-2 flex-wrap mt-1">
+              {Object.entries(CLIMATE_LABELS).map(([climateValue, climateLabel]) => (
+                <button
+                  key={climateValue}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, climate: climateValue }))}
+                  className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                    form.climate === climateValue
+                      ? "border-[var(--dash-primary)] bg-[var(--dash-primary)]/10 text-[var(--dash-primary)]"
+                      : "border-[var(--dash-border)] text-[var(--dash-muted)] hover:border-[var(--dash-text)] hover:text-[var(--dash-text)]"
+                  }`}
+                >
+                  {climateLabel}
+                </button>
+              ))}
             </div>
-          </label>
-          <label>
+          </div>
+          <div>
             <span className="dashboard-modal-label">Experience</span>
-            <div className="dashboard-modal-field">
-              <CustomSelect
-                className="w-full"
-                name="experience"
-                value={form.experience}
-                onChange={updateField}
-                options={Object.entries(EXPERIENCE_LABELS).map(([value, label]) => ({
-                  value,
-                  label
-                }))}
-              />
+            <div className="flex gap-2 flex-wrap mt-1">
+              {Object.entries(EXPERIENCE_LABELS).map(([expValue, expLabel]) => (
+                <button
+                  key={expValue}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, experience: expValue }))}
+                  className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
+                    form.experience === expValue
+                      ? "border-[var(--dash-primary)] bg-[var(--dash-primary)]/10 text-[var(--dash-primary)]"
+                      : "border-[var(--dash-border)] text-[var(--dash-muted)] hover:border-[var(--dash-text)] hover:text-[var(--dash-text)]"
+                  }`}
+                >
+                  {expLabel}
+                </button>
+              ))}
             </div>
-          </label>
+          </div>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

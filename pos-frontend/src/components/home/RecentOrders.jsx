@@ -16,17 +16,18 @@ import { getOrders } from "../../https/index";
 import { getOrderTableLabel } from "../tables/tableOptions";
 import CustomSelect from "../shared/CustomSelect";
 
-const inProgressStatuses = ["PENDING", "ACCEPTED", "PREPARING"];
+const inProgressStatuses = ["PENDING", "PREPARING"];
 
 const statusLabels = {
   PENDING: "Pending",
-  ACCEPTED: "Accepted",
   PREPARING: "Preparing",
   READY: "Ready",
   SERVED: "Served",
   COMPLETED: "Completed",
   REJECTED: "Rejected",
   CANCELLED: "Cancelled",
+  // Legacy: some older orders may still carry ACCEPTED status
+  ACCEPTED: "Accepted",
 };
 
 const RecentOrders = ({ search = "" }) => {

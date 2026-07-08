@@ -24,6 +24,10 @@ const InventoryModal = ({ action, record, onClose }) => {
     reorderPoint: record?.reorderPoint ?? "",
     reorderQuantity: record?.reorderQuantity ?? "",
   });
+  // alertMode: 'percent' uses alertThreshold, 'quantity' uses reorderPoint
+  const [alertMode, setAlertMode] = useState(
+    record?.reorderPoint != null ? "quantity" : "percent"
+  );
 
   const { data: menuData } = useQuery({
     queryKey: ["menu"],
@@ -76,9 +80,11 @@ const InventoryModal = ({ action, record, onClose }) => {
       ...formData,
       currentStock: Number(formData.currentStock),
       totalStock: Number(formData.totalStock || formData.currentStock),
-      alertThreshold: Number(formData.alertThreshold),
+      alertThreshold: alertMode === "percent" ? Number(formData.alertThreshold) : 30,
       reorderPoint:
-        formData.reorderPoint !== "" ? Number(formData.reorderPoint) : null,
+        alertMode === "quantity" && formData.reorderPoint !== ""
+          ? Number(formData.reorderPoint)
+          : null,
       reorderQuantity:
         formData.reorderQuantity !== "" ? Number(formData.reorderQuantity) : null,
     };
@@ -250,8 +256,8 @@ const InventoryModal = ({ action, record, onClose }) => {
           </div>
 
           <div className="border border-[var(--dash-border)] p-4 rounded-lg bg-[var(--dash-surface-muted)] flex flex-col gap-4">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">Low Stock Alerts</h3>
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold">Low Stock Alert</h3>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -265,66 +271,99 @@ const InventoryModal = ({ action, record, onClose }) => {
               </label>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-[var(--dash-muted)] mb-1">
-                  Low Stock Threshold ({formData.unit || "units"})
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  disabled={!formData.alertEnabled}
-                  value={formData.reorderPoint}
-                  onChange={(e) =>
-                    setFormData({ ...formData, reorderPoint: e.target.value })
-                  }
-                  placeholder="e.g. 5"
-                  className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none disabled:opacity-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-[var(--dash-muted)] mb-1">
-                  Reorder Quantity
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  disabled={!formData.alertEnabled}
-                  value={formData.reorderQuantity}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      reorderQuantity: e.target.value,
-                    })
-                  }
-                  placeholder="e.g. 20"
-                  className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none disabled:opacity-50"
-                />
-              </div>
-            </div>
+            {formData.alertEnabled && (
+              <>
+                {/* Mode toggle — card buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: "percent", label: "By Percentage", desc: "e.g. alert at 30% remaining" },
+                    { value: "quantity", label: "By Quantity", desc: `e.g. alert at 5 ${formData.unit || "units"}` },
+                  ].map((mode) => (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => setAlertMode(mode.value)}
+                      className={`rounded-lg border p-3 text-left transition-all ${
+                        alertMode === mode.value
+                          ? "border-[var(--dash-primary)] bg-[var(--dash-primary)]/10"
+                          : "border-[var(--dash-border)] bg-[var(--dash-surface)] opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <p className="text-sm font-semibold text-[var(--dash-text)]">{mode.label}</p>
+                      <p className="text-xs text-[var(--dash-muted)] mt-0.5">{mode.desc}</p>
+                    </button>
+                  ))}
+                </div>
 
-            <div>
-              <label className="block text-sm text-[var(--dash-muted)] mb-1">
-                Fallback Alert Threshold (%)
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="100"
-                disabled={!formData.alertEnabled}
-                value={formData.alertThreshold}
-                onChange={(e) =>
-                  setFormData({ ...formData, alertThreshold: e.target.value })
-                }
-                className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none disabled:opacity-50"
-              />
-              <p className="text-xs text-[var(--dash-muted)] mt-2">
-                If a low stock number is set, alerts use that exact stock level.
-                Otherwise, alerts use this percentage of total capacity.
-              </p>
-            </div>
+                {alertMode === "percent" ? (
+                  <div>
+                    <label className="block text-sm text-[var(--dash-muted)] mb-1">
+                      Alert threshold (%)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={formData.alertThreshold}
+                      onChange={(e) =>
+                        setFormData({ ...formData, alertThreshold: e.target.value })
+                      }
+                      className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none focus:border-[var(--dash-primary)]"
+                    />
+                    {formData.totalStock && (
+                      <p className="text-xs text-[var(--dash-muted)] mt-2">
+                        🔔 Alert fires when stock drops below{" "}
+                        <strong>
+                          {((Number(formData.alertThreshold) / 100) * Number(formData.totalStock)).toFixed(1)}{" "}
+                          {formData.unit || "units"}
+                        </strong>{" "}
+                        ({formData.alertThreshold}% of {formData.totalStock})
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-[var(--dash-muted)] mb-1">
+                        Alert below ({formData.unit || "units"})
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={formData.reorderPoint}
+                        onChange={(e) =>
+                          setFormData({ ...formData, reorderPoint: e.target.value })
+                        }
+                        placeholder={`e.g. 5 ${formData.unit || ""}`}
+                        className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none focus:border-[var(--dash-primary)]"
+                      />
+                      {formData.reorderPoint !== "" && (
+                        <p className="text-xs text-[var(--dash-muted)] mt-2">
+                          🔔 Alert fires when stock ≤ {formData.reorderPoint} {formData.unit || "units"}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm text-[var(--dash-muted)] mb-1">
+                        Reorder quantity (optional)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={formData.reorderQuantity}
+                        onChange={(e) =>
+                          setFormData({ ...formData, reorderQuantity: e.target.value })
+                        }
+                        placeholder="e.g. 20"
+                        className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none focus:border-[var(--dash-primary)]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="flex gap-4 mt-4 sticky bottom-0 bg-[var(--dash-surface)] pt-2">
