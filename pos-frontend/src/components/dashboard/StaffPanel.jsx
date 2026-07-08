@@ -11,7 +11,46 @@ import {
 import useRoleDashboard from "../../hooks/useRoleDashboard";
 import useRole from "../../hooks/useRole";
 import PlanLimitBadge from "../shared/PlanLimitBadge";
-import CustomSelect from "../shared/CustomSelect";
+import { MdCheck, MdClose } from "react-icons/md";
+
+const ROLE_DETAILS = {
+  MANAGER: {
+    label: "Manager",
+    description: "Full access to daily operations.",
+    scopes: [
+      { text: "Manage Staff & Menu", allowed: true },
+      { text: "View Finance & Metrics", allowed: true },
+      { text: "Manage Tables & Orders", allowed: true },
+    ],
+  },
+  CASHIER: {
+    label: "Cashier",
+    description: "Handle orders and payments.",
+    scopes: [
+      { text: "Process Payments", allowed: true },
+      { text: "Manage Tables & Orders", allowed: true },
+      { text: "Manage Staff or Menu", allowed: false },
+    ],
+  },
+  KITCHEN: {
+    label: "Kitchen Staff",
+    description: "Dedicated kitchen display screen access.",
+    scopes: [
+      { text: "View Kitchen Orders", allowed: true },
+      { text: "Process Payments", allowed: false },
+      { text: "Manage Tables", allowed: false },
+    ],
+  },
+  WAITER: {
+    label: "Waiter",
+    description: "Take orders and manage dining tables.",
+    scopes: [
+      { text: "Take Orders & Manage Tables", allowed: true },
+      { text: "Process Payments", allowed: false },
+      { text: "Manage Menu", allowed: false },
+    ],
+  },
+};
 
 const StaffPanel = () => {
   const { canManageStaff } = useRoleDashboard();
@@ -185,13 +224,48 @@ const StaffPanel = () => {
             className="dashboard-form-control w-full rounded-lg p-3 mb-3 focus:outline-none"
           />
         ))}
-        <CustomSelect
-          className="w-full mb-3"
-          name="role"
-          value={form.role}
-          onChange={(event) => setForm({ ...form, role: event.target.value })}
-          options={assignableRoles.map((item) => ({ value: item, label: item }))}
-        />
+        <div className="mb-5">
+          <label className="block text-sm font-medium mb-3">Select Role</label>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {assignableRoles.map((roleKey) => {
+              const details = ROLE_DETAILS[roleKey];
+              const isSelected = form.role === roleKey;
+              return (
+                <div
+                  key={roleKey}
+                  onClick={() => setForm({ ...form, role: roleKey })}
+                  className={`border rounded-xl p-4 cursor-pointer transition-all ${
+                    isSelected
+                      ? "border-[var(--primary)] bg-[var(--primary)] bg-opacity-10"
+                      : "border-[var(--dash-border)] hover:border-[var(--dash-muted)]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? "border-[var(--primary)]" : "border-[var(--dash-muted)]"}`}>
+                      {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-[var(--primary)]" />}
+                    </div>
+                    <span className="font-semibold">{details.label}</span>
+                  </div>
+                  <p className="text-xs text-[var(--dash-muted)] mb-3 pl-6">{details.description}</p>
+                  <div className="pl-6 flex flex-col gap-1.5">
+                    {details.scopes.map((scope, idx) => (
+                      <div key={idx} className="flex items-center gap-2 text-xs">
+                        {scope.allowed ? (
+                          <MdCheck className="text-green-500 text-sm" />
+                        ) : (
+                          <MdClose className="text-red-500 text-sm" />
+                        )}
+                        <span className={scope.allowed ? "text-[var(--dash-text)]" : "text-[var(--dash-muted)]"}>
+                          {scope.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
         {latestPassword && (
           <div className="staff-temp-password-panel mb-4">
             <p className="staff-temp-password-label">

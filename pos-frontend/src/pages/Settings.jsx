@@ -24,17 +24,52 @@ import {
   MdShare,
   MdOpenInNew,
 } from "react-icons/md";
-import { changePassword, getErrorMessage, updateMyRestaurant, getMyReferrals } from "../https";
+import {
+  changePassword,
+  getErrorMessage,
+  updateMyRestaurant,
+  getMyReferrals,
+} from "../https";
 import { setRestaurant } from "../redux/slices/userSlice";
 import useDashboardPreferences from "../hooks/useDashboardPreferences";
 import useRole from "../hooks/useRole";
 
 const CURRENCIES = [
-  { code: "INR", label: "INR", sublabel: "Indian Rupee", symbol: "₹", flag: "🇮🇳" },
-  { code: "USD", label: "USD", sublabel: "US Dollar", symbol: "$", flag: "🇺🇸" },
-  { code: "EUR", label: "EUR", sublabel: "Euro", symbol: "€", flag: "🇪🇺" },
-  { code: "GBP", label: "GBP", sublabel: "British Pound", symbol: "£", flag: "🇬🇧" },
-  { code: "AUD", label: "AUD", sublabel: "Australian Dollar", symbol: "$", flag: "🇦🇺" },
+  {
+    code: "INR",
+    label: "INR",
+    sublabel: "Indian Rupee",
+    symbol: "Rs",
+    region: "India",
+  },
+  {
+    code: "USD",
+    label: "USD",
+    sublabel: "US Dollar",
+    symbol: "$",
+    region: "United States",
+  },
+  {
+    code: "EUR",
+    label: "EUR",
+    sublabel: "Euro",
+    symbol: "EUR",
+    region: "Eurozone",
+  },
+  {
+    code: "GBP",
+    label: "GBP",
+    sublabel: "British Pound",
+    symbol: "GBP",
+    region: "United Kingdom",
+  },
+  {
+    code: "AUD",
+    label: "AUD",
+    sublabel: "Australian Dollar",
+    symbol: "$",
+    region: "Australia",
+  },
 ];
 
 const FieldIcon = ({ icon: Icon }) => (
@@ -125,11 +160,17 @@ const Settings = () => {
   const passwordMutation = useMutation({
     mutationFn: changePassword,
     onSuccess: () => {
-      setPassword({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      setPassword({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
       enqueueSnackbar("Password changed successfully", { variant: "success" });
     },
     onError: (error) =>
-      enqueueSnackbar(getErrorMessage(error, "Password change failed"), { variant: "error" }),
+      enqueueSnackbar(getErrorMessage(error, "Password change failed"), {
+        variant: "error",
+      }),
   });
 
   const restaurantMutation = useMutation({
@@ -158,10 +199,15 @@ const Settings = () => {
     });
   };
 
-  const selectedCurrency = CURRENCIES.find((c) => c.code === restaurant.currency) || CURRENCIES[0];
+  const selectedCurrency =
+    CURRENCIES.find((c) => c.code === restaurant.currency) || CURRENCIES[0];
 
   const statusColors = {
-    APPROVED: { bg: "var(--dash-primary-soft)", color: "var(--dash-primary-strong)", dot: "var(--dash-primary)" },
+    APPROVED: {
+      bg: "var(--dash-primary-soft)",
+      color: "var(--dash-primary-strong)",
+      dot: "var(--dash-primary)",
+    },
     PENDING: { bg: "#fff7e6", color: "#b45309", dot: "#f59e0b" },
     REJECTED: { bg: "#fef2f2", color: "#b91c1c", dot: "#ef4444" },
   };
@@ -170,14 +216,11 @@ const Settings = () => {
   const statusStyle = statusColors[restaurantStatus] || statusColors.PENDING;
 
   return (
-    <section
-      className={`dashboard-shell theme-${theme} settings-page`}
-    >
-      {/* Page Header */}
+    <section className={`dashboard-shell theme-${theme} settings-page`}>
       <div className="settings-page-header">
         <div className="settings-page-header-left">
           <span className="settings-page-eyebrow">
-            {isOwner ? "Workspace" : "Account"} · Settings
+            {isOwner ? "Workspace" : "Account"} / Settings
           </span>
           <h1 className="settings-page-title">Settings</h1>
           <p className="settings-page-subtitle">
@@ -187,7 +230,6 @@ const Settings = () => {
           </p>
         </div>
 
-        {/* Identity Card */}
         <div className="settings-id-card">
           <div className="settings-id-avatar">
             {(user.name || user.email || "U").trim().charAt(0).toUpperCase()}
@@ -200,7 +242,6 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Restaurant Status Banner (owner only) */}
       {isOwner && user.restaurant && (
         <div
           className="settings-status-banner"
@@ -214,7 +255,7 @@ const Settings = () => {
           <div>
             <strong>{user.restaurant.name}</strong>
             <span>
-              {restaurantStatus} · {user.restaurant.plan || "STARTER"} plan
+              {restaurantStatus} / {user.restaurant.plan || "STARTER"} plan
             </span>
           </div>
           {restaurantStatus === "APPROVED" ? (
@@ -225,10 +266,9 @@ const Settings = () => {
         </div>
       )}
 
-      {/* Main Grid */}
-      <div className={`settings-cards-grid ${canEditRestaurant ? "two-col" : "one-col"}`}>
-
-        {/* ── Security Card ── */}
+      <div
+        className={`settings-cards-grid ${canEditRestaurant ? "two-col" : "one-col"}`}
+      >
         <div className="settings-card">
           <div className="settings-card-header">
             <div className="settings-card-icon-wrap security">
@@ -244,7 +284,9 @@ const Settings = () => {
             <div className="settings-info-row">
               <MdOutlineEmail />
               <span>{user.email}</span>
-              <span className="settings-readonly-badge">Login email · read-only</span>
+              <span className="settings-readonly-badge">
+                Login email / read-only
+              </span>
             </div>
 
             <div className="settings-divider" />
@@ -273,7 +315,8 @@ const Settings = () => {
 
             <div className="settings-security-note">
               <MdOutlineWarningAmber />
-              All other active sessions will be signed out after password change.
+              All other active sessions will be signed out after password
+              change.
             </div>
 
             <button
@@ -286,12 +329,11 @@ const Settings = () => {
               ) : (
                 <MdCheck />
               )}
-              {passwordMutation.isPending ? "Updating…" : "Update Password"}
+              {passwordMutation.isPending ? "Updating..." : "Update Password"}
             </button>
           </form>
         </div>
 
-        {/* ── Restaurant Profile Card ── */}
         {canEditRestaurant && (
           <div className="settings-card">
             <div className="settings-card-header">
@@ -315,7 +357,6 @@ const Settings = () => {
               }}
               className="settings-card-body"
             >
-              {/* Row: Name + City */}
               <div className="settings-field-row">
                 <label className="settings-field-group">
                   <span className="settings-field-label">Restaurant Name</span>
@@ -323,7 +364,12 @@ const Settings = () => {
                     <FieldIcon icon={MdOutlineStorefront} />
                     <input
                       value={restaurant.name}
-                      onChange={(e) => setRestaurantForm({ ...restaurant, name: e.target.value })}
+                      onChange={(e) =>
+                        setRestaurantForm({
+                          ...restaurant,
+                          name: e.target.value,
+                        })
+                      }
                       placeholder="e.g. Spice Garden"
                       required
                       className="settings-field-input"
@@ -336,7 +382,12 @@ const Settings = () => {
                     <FieldIcon icon={MdOutlineLocationOn} />
                     <input
                       value={restaurant.city}
-                      onChange={(e) => setRestaurantForm({ ...restaurant, city: e.target.value })}
+                      onChange={(e) =>
+                        setRestaurantForm({
+                          ...restaurant,
+                          city: e.target.value,
+                        })
+                      }
                       placeholder="e.g. Mumbai"
                       required
                       className="settings-field-input"
@@ -345,14 +396,18 @@ const Settings = () => {
                 </label>
               </div>
 
-              {/* Address */}
               <label className="settings-field-group">
                 <span className="settings-field-label">Address</span>
                 <div className="settings-field-wrap">
                   <FieldIcon icon={MdOutlineLocationOn} />
                   <input
                     value={restaurant.address}
-                    onChange={(e) => setRestaurantForm({ ...restaurant, address: e.target.value })}
+                    onChange={(e) =>
+                      setRestaurantForm({
+                        ...restaurant,
+                        address: e.target.value,
+                      })
+                    }
                     placeholder="Street, Building, Area"
                     required
                     className="settings-field-input"
@@ -360,7 +415,6 @@ const Settings = () => {
                 </div>
               </label>
 
-              {/* Row: Phone + Email */}
               <div className="settings-field-row">
                 <label className="settings-field-group">
                   <span className="settings-field-label">Contact Phone</span>
@@ -368,7 +422,12 @@ const Settings = () => {
                     <FieldIcon icon={MdOutlinePhone} />
                     <input
                       value={restaurant.phone}
-                      onChange={(e) => setRestaurantForm({ ...restaurant, phone: e.target.value })}
+                      onChange={(e) =>
+                        setRestaurantForm({
+                          ...restaurant,
+                          phone: e.target.value,
+                        })
+                      }
                       placeholder="+91 98765 43210"
                       required
                       className="settings-field-input"
@@ -382,7 +441,12 @@ const Settings = () => {
                     <input
                       type="email"
                       value={restaurant.email}
-                      onChange={(e) => setRestaurantForm({ ...restaurant, email: e.target.value })}
+                      onChange={(e) =>
+                        setRestaurantForm({
+                          ...restaurant,
+                          email: e.target.value,
+                        })
+                      }
                       placeholder="contact@restaurant.com"
                       required
                       className="settings-field-input"
@@ -391,40 +455,54 @@ const Settings = () => {
                 </label>
               </div>
 
-              {/* Logo URL */}
               <label className="settings-field-group">
-                <span className="settings-field-label">Logo URL <em className="settings-optional">(optional)</em></span>
+                <span className="settings-field-label">
+                  Logo URL <em className="settings-optional">(optional)</em>
+                </span>
                 <div className="settings-field-wrap">
                   <FieldIcon icon={MdOutlineLink} />
                   <input
                     type="url"
                     value={restaurant.logo}
-                    onChange={(e) => setRestaurantForm({ ...restaurant, logo: e.target.value })}
+                    onChange={(e) =>
+                      setRestaurantForm({ ...restaurant, logo: e.target.value })
+                    }
                     placeholder="https://example.com/logo.png"
                     className="settings-field-input"
                   />
                 </div>
               </label>
 
-              {/* Description */}
               <label className="settings-field-group">
-                <span className="settings-field-label">Description <em className="settings-optional">(optional)</em></span>
+                <span className="settings-field-label">
+                  Description <em className="settings-optional">(optional)</em>
+                </span>
                 <div className="settings-field-wrap settings-field-wrap--textarea">
                   <FieldIcon icon={MdOutlineDescription} />
                   <textarea
                     value={restaurant.description}
-                    onChange={(e) => setRestaurantForm({ ...restaurant, description: e.target.value })}
-                    placeholder="Tell guests about your restaurant…"
+                    onChange={(e) =>
+                      setRestaurantForm({
+                        ...restaurant,
+                        description: e.target.value,
+                      })
+                    }
+                    placeholder="Tell guests about your restaurant..."
                     rows={3}
                     className="settings-field-input settings-field-textarea"
                   />
                 </div>
               </label>
 
-              {/* Currency Selector */}
               <div className="settings-field-group">
                 <span className="settings-field-label">
-                  <MdOutlinePayment style={{ display: "inline", marginRight: 5, verticalAlign: "middle" }} />
+                  <MdOutlinePayment
+                    style={{
+                      display: "inline",
+                      marginRight: 5,
+                      verticalAlign: "middle",
+                    }}
+                  />
                   Billing Currency
                 </span>
                 <div className="settings-currency-grid">
@@ -433,12 +511,20 @@ const Settings = () => {
                       key={c.code}
                       type="button"
                       className={`settings-currency-option ${restaurant.currency === c.code ? "is-selected" : ""}`}
-                      onClick={() => setRestaurantForm({ ...restaurant, currency: c.code })}
+                      onClick={() =>
+                        setRestaurantForm({ ...restaurant, currency: c.code })
+                      }
                     >
-                      <span className="settings-currency-flag">{c.flag}</span>
-                      <span className="settings-currency-symbol">{c.symbol}</span>
+                      <span className="settings-currency-symbol">
+                        {c.symbol}
+                      </span>
                       <span className="settings-currency-code">{c.code}</span>
-                      <span className="settings-currency-name">{c.sublabel}</span>
+                      <span className="settings-currency-name">
+                        {c.sublabel}
+                      </span>
+                      <span className="settings-currency-region">
+                        {c.region}
+                      </span>
                       {restaurant.currency === c.code && (
                         <MdCheck className="settings-currency-check" />
                       )}
@@ -447,8 +533,10 @@ const Settings = () => {
                 </div>
                 <p className="settings-currency-hint">
                   Currently using{" "}
-                  <strong>{selectedCurrency.flag} {selectedCurrency.code} ({selectedCurrency.symbol})</strong>.
-                  Affects all revenue displays across the dashboard.
+                  <strong>
+                    {selectedCurrency.code} ({selectedCurrency.symbol})
+                  </strong>
+                  . Affects all revenue displays across the dashboard.
                 </p>
               </div>
 
@@ -462,27 +550,25 @@ const Settings = () => {
                 ) : (
                   <MdCheck />
                 )}
-                {restaurantMutation.isPending ? "Saving…" : "Save Restaurant Profile"}
+                {restaurantMutation.isPending
+                  ? "Saving..."
+                  : "Save Restaurant Profile"}
               </button>
             </form>
           </div>
         )}
-      {/* ── Referral Card ── */}
-        {canEditRestaurant && (
-          <ReferralCard />
-        )}
+        {canEditRestaurant && <ReferralCard />}
       </div>
     </section>
   );
 };
 
-// ── Referral Card Component ─────────────────────────────────────────────────────
 const ReferralCard = () => {
   const [copied, setCopied] = useState(false);
   const { data: refRes, isLoading } = useQuery({
     queryKey: ["my-referrals"],
     queryFn: getMyReferrals,
-    staleTime: 0,         // always refetch on mount so lazy-generated code is picked up
+    staleTime: 0, // always refetch on mount so lazy-generated code is picked up
   });
   const ref = refRes?.data?.data;
 
@@ -497,11 +583,13 @@ const ReferralCard = () => {
   const share = () => {
     if (!ref?.referralLink) return;
     if (navigator.share) {
-      navigator.share({
-        title: "Join me on Restro POS",
-        text: "Sign up through my referral link and get bonus free days!",
-        url: ref.referralLink,
-      }).catch(() => {});
+      navigator
+        .share({
+          title: "Join me on Restro POS",
+          text: "Sign up through my referral link and get bonus free days!",
+          url: ref.referralLink,
+        })
+        .catch(() => {});
     } else {
       copyLink();
       enqueueSnackbar("Link copied to clipboard!", { variant: "info" });
@@ -510,17 +598,35 @@ const ReferralCard = () => {
 
   const statusBadge = (status) => {
     const map = {
-      PENDING: { label: "Pending", color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
-      COMPLETED: { label: "Completed", color: "#10b981", bg: "rgba(16,185,129,0.12)" },
-      EXPIRED: { label: "Expired", color: "#6b7280", bg: "rgba(107,114,128,0.12)" },
+      PENDING: {
+        label: "Pending",
+        color: "#f59e0b",
+        bg: "rgba(245,158,11,0.12)",
+      },
+      COMPLETED: {
+        label: "Completed",
+        color: "#10b981",
+        bg: "rgba(16,185,129,0.12)",
+      },
+      EXPIRED: {
+        label: "Expired",
+        color: "#6b7280",
+        bg: "rgba(107,114,128,0.12)",
+      },
     };
     const s = map[status] || map.PENDING;
     return (
-      <span style={{
-        background: s.bg, color: s.color,
-        fontSize: 11, fontWeight: 750, padding: "2px 8px",
-        borderRadius: 999, whiteSpace: "nowrap",
-      }}>
+      <span
+        style={{
+          background: s.bg,
+          color: s.color,
+          fontSize: 11,
+          fontWeight: 750,
+          padding: "2px 8px",
+          borderRadius: 999,
+          whiteSpace: "nowrap",
+        }}
+      >
         {s.label}
       </span>
     );
@@ -540,7 +646,9 @@ const ReferralCard = () => {
 
       <div className="settings-card-body">
         {isLoading ? (
-          <div className="settings-referral-loading">Loading referral data…</div>
+          <div className="settings-referral-loading">
+            Loading referral data...
+          </div>
         ) : !ref?.active ? (
           <div className="settings-referral-inactive">
             <MdOutlineCardGiftcard />
@@ -551,7 +659,9 @@ const ReferralCard = () => {
             {/* Rewards summary */}
             <div className="settings-referral-rewards">
               <div className="settings-referral-reward-pill you">
-                <span className="reward-icon">🎉</span>
+                <span className="reward-icon">
+                  <MdOutlineVerified />
+                </span>
                 <div>
                   <strong>+{ref.rewardsPerReferral.youGet} days</strong>
                   <span>You earn per referral</span>
@@ -559,15 +669,19 @@ const ReferralCard = () => {
               </div>
               <div className="settings-referral-reward-divider">+</div>
               <div className="settings-referral-reward-pill they">
-                <span className="reward-icon">🎁</span>
+                <span className="reward-icon">
+                  <MdOutlineCardGiftcard />
+                </span>
                 <div>
                   <strong>+{ref.rewardsPerReferral.theyGet} days</strong>
                   <span>They earn on signup</span>
                 </div>
               </div>
-              <div className="settings-referral-reward-divider">•</div>
+              <div className="settings-referral-reward-divider">=</div>
               <div className="settings-referral-reward-pill total">
-                <span className="reward-icon">✨</span>
+                <span className="reward-icon">
+                  <MdOutlinePayment />
+                </span>
                 <div>
                   <strong>{ref.creditDays} days</strong>
                   <span>Total credit earned</span>
@@ -601,7 +715,8 @@ const ReferralCard = () => {
                 </button>
               </div>
               <p className="settings-currency-hint">
-                Code: <strong>{ref.referralCode}</strong> · Links expire 90 days after a restaurant signs up (not after code generation).
+                Code: <strong>{ref.referralCode}</strong> / Links expire 90 days
+                after a restaurant signs up (not after code generation).
               </p>
             </div>
 
@@ -624,7 +739,9 @@ const ReferralCard = () => {
             {/* History */}
             {ref.referrals.length > 0 && (
               <div className="settings-referral-history">
-                <p className="settings-field-label" style={{ marginBottom: 8 }}>Referral History</p>
+                <p className="settings-field-label" style={{ marginBottom: 8 }}>
+                  Referral History
+                </p>
                 <div className="settings-referral-table-wrap">
                   <table className="settings-referral-table">
                     <thead>
@@ -640,10 +757,19 @@ const ReferralCard = () => {
                       {ref.referrals.map((r) => (
                         <tr key={r.id}>
                           <td>{r.refereeName}</td>
-                          <td className="settings-ref-email">{r.refereeEmail}</td>
+                          <td className="settings-ref-email">
+                            {r.refereeEmail}
+                          </td>
                           <td>{statusBadge(r.status)}</td>
                           <td>{new Date(r.createdAt).toLocaleDateString()}</td>
-                          <td style={{ color: new Date(r.expiresAt) < new Date() ? "var(--dash-danger)" : "var(--dash-muted)" }}>
+                          <td
+                            style={{
+                              color:
+                                new Date(r.expiresAt) < new Date()
+                                  ? "var(--dash-danger)"
+                                  : "var(--dash-muted)",
+                            }}
+                          >
                             {new Date(r.expiresAt).toLocaleDateString()}
                           </td>
                         </tr>

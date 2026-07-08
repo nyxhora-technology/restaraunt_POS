@@ -55,10 +55,10 @@ const NotificationsPanel = ({
         className="fixed inset-0 bg-black/50 z-40" 
         onClick={onClose}
       />
-      <div className="fixed top-0 right-0 h-full w-[400px] bg-[#1a1a1a] shadow-2xl z-50 flex flex-col border-l border-[#2a2a2a] animate-slide-left">
-        <div className="flex justify-between items-center p-5 border-b border-[#2a2a2a]">
-          <h2 className="text-[#f5f5f5] text-xl font-bold">Notifications</h2>
-          <button onClick={onClose} className="text-[#ababab] hover:text-white">
+      <div className="fixed top-0 right-0 h-full w-[400px] bg-[var(--dash-surface)] shadow-2xl z-50 flex flex-col border-l border-[var(--dash-border)] animate-slide-left text-[var(--dash-text)]">
+        <div className="flex justify-between items-center p-5 border-b border-[var(--dash-border)]">
+          <h2 className="text-[var(--dash-text)] text-xl font-bold">Notifications</h2>
+          <button onClick={onClose} className="text-[var(--dash-muted)] hover:text-[var(--dash-text)]">
             <IoMdClose size={24} />
           </button>
         </div>
@@ -66,19 +66,19 @@ const NotificationsPanel = ({
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
           {orderCount > 0 && (
             <div 
-              className="bg-[#2a2a2a] p-4 rounded-lg cursor-pointer hover:bg-[#333] transition-colors border border-[#02ca3a]/30"
+              className="bg-[var(--dash-bg)] p-4 rounded-lg cursor-pointer hover:bg-[var(--dash-surface-muted)] transition-colors border border-[var(--primary)]"
               onClick={() => {
                 navigate("/app/orders");
                 onClose();
               }}
             >
               <div className="flex items-center gap-3">
-                <div className="bg-[#02ca3a]/20 p-2 rounded-full text-[#02ca3a]">
+                <div className="bg-[var(--primary)] bg-opacity-20 p-2 rounded-full text-[var(--primary)]">
                   <MdOutlineReceiptLong size={20} />
                 </div>
                 <div>
-                  <h3 className="text-[#f5f5f5] font-semibold">New Pending Orders</h3>
-                  <p className="text-[#ababab] text-sm">You have {orderCount} pending order{orderCount > 1 ? 's' : ''} to review.</p>
+                  <h3 className="text-[var(--dash-text)] font-semibold">New Pending Orders</h3>
+                  <p className="text-[var(--dash-muted)] text-sm">You have {orderCount} pending order{orderCount > 1 ? 's' : ''} to review.</p>
                 </div>
               </div>
             </div>
@@ -87,14 +87,14 @@ const NotificationsPanel = ({
           {canViewInventoryAlerts && (
             <>
               <div className="flex justify-between items-center mt-2">
-                <h3 className="text-[#ababab] text-sm font-semibold uppercase tracking-wider">
+                <h3 className="text-[var(--dash-muted)] text-sm font-semibold uppercase tracking-wider">
                   Inventory Alerts
                 </h3>
                 {unreadAlerts.length > 0 && (
                   <button
                     onClick={() => markAllReadMutation.mutate()}
                     disabled={markAllReadMutation.isPending}
-                    className="text-[#02ca3a] text-xs hover:underline"
+                    className="text-[var(--primary)] text-xs hover:underline"
                   >
                     Mark all read
                   </button>
@@ -102,11 +102,11 @@ const NotificationsPanel = ({
               </div>
 
               {isLoading ? (
-                <div className="text-center text-[#ababab] py-4">
+                <div className="text-center text-[var(--dash-muted)] py-4">
                   Loading alerts...
                 </div>
               ) : alerts.length === 0 ? (
-                <div className="text-center text-[#ababab] py-8 border border-dashed border-[#2a2a2a] rounded-lg">
+                <div className="text-center text-[var(--dash-muted)] py-8 border border-dashed border-[var(--dash-border)] rounded-lg">
                   No inventory alerts right now.
                 </div>
               ) : (
@@ -115,8 +115,8 @@ const NotificationsPanel = ({
                     key={alert.id}
                     className={`p-4 rounded-lg border ${
                       !alert.isRead
-                        ? "border-[#383838] bg-[#262626]"
-                        : "border-transparent bg-[#1f1f1f] opacity-70"
+                        ? "border-[var(--dash-primary-soft)] bg-[var(--dash-surface-muted)]"
+                        : "border-transparent bg-[var(--dash-bg)] opacity-70"
                     }`}
                   >
                     <div className="flex justify-between items-start gap-3">
@@ -124,20 +124,20 @@ const NotificationsPanel = ({
                         <p
                           className={`text-sm ${
                             !alert.isRead
-                              ? "text-white font-medium"
-                              : "text-[#ababab]"
+                              ? "text-[var(--dash-text)] font-medium"
+                              : "text-[var(--dash-muted)]"
                           }`}
                         >
                           {alert.message}
                         </p>
-                        <p className="text-xs text-[#ababab] mt-2">
+                        <p className="text-xs text-[var(--dash-muted)] mt-2">
                           {dayjs(alert.createdAt).fromNow()}
                         </p>
                       </div>
                       {!alert.isRead && (
                         <button
                           onClick={() => markReadMutation.mutate(alert.id)}
-                          className="text-[#ababab] hover:text-[#02ca3a] p-1 bg-[#1a1a1a] rounded"
+                          className="text-[var(--dash-muted)] hover:text-[var(--primary)] p-1 bg-[var(--dash-surface)] rounded"
                           title="Mark as read"
                         >
                           <IoMdCheckmark size={16} />
@@ -151,7 +151,7 @@ const NotificationsPanel = ({
           )}
 
           {!orderCount && !canViewInventoryAlerts && (
-            <div className="text-center text-[#ababab] py-8 border border-dashed border-[#2a2a2a] rounded-lg">
+            <div className="text-center text-[var(--dash-muted)] py-8 border border-dashed border-[var(--dash-border)] rounded-lg">
               No notifications right now.
             </div>
           )}

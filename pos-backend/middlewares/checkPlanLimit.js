@@ -49,7 +49,9 @@ const checkPlanLimit = (resource) => async (req, _res, next) => {
       }
 
       case "tables": {
-        currentCount = await prisma.table.count({ where: { restaurantId } });
+        currentCount = await prisma.table.count({
+          where: { restaurantId, isActive: true },
+        });
         break;
       }
 

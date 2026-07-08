@@ -48,6 +48,16 @@ const normalizeCode = (value) =>
 const normalizeLabel = (value) => value.trim().toUpperCase();
 const normalizeCombinationGroup = (value) => value.trim().toUpperCase();
 
+const getTableWriteData = (reqBody, restaurantId, areaId, label) => ({
+  ...reqBody,
+  areaId,
+  label,
+  combinationGroup: reqBody.isCombinable
+    ? normalizeCombinationGroup(reqBody.combinationGroup)
+    : null,
+  restaurantId,
+});
+
 const findActiveArea = async (restaurantId, areaId) => {
   if (areaId) {
     const area = await prisma.diningArea.findFirst({
@@ -158,16 +168,72 @@ const addTable = async (req, res, next) => {
   try {
     const area = await findActiveArea(req.restaurantId, req.body.areaId);
     const label = normalizeLabel(req.body.label || `T-${req.body.tableNo}`);
-    const table = await prisma.table.create({
-      data: {
-        ...req.body,
+    const activeConflict = await prisma.table.findFirst({
+      where: {
+        restaurantId: req.restaurantId,
+        isActive: true,
+        OR: [{ tableNo: req.body.tableNo }, { label }],
+      },
+    });
+    if (activeConflict) {
+      const conflictField =
+        activeConflict.tableNo === req.body.tableNo ? "number" : "label";
+      throw createHttpError(
+        409,
+        `An active table with this ${conflictField} already exists`,
+      );
+    }
+
+    const [archivedByNumber, archivedByLabel] = await Promise.all([
+      prisma.table.findFirst({
+        where: {
+          restaurantId: req.restaurantId,
+          isActive: false,
+          tableNo: req.body.tableNo,
+        },
+      }),
+      prisma.table.findFirst({
+        where: {
+          restaurantId: req.restaurantId,
+          isActive: false,
+          label,
+        },
+      }),
+    ]);
+
+    if (
+      archivedByNumber &&
+      archivedByLabel &&
+      archivedByNumber.id !== archivedByLabel.id
+    ) {
+      throw createHttpError(
+        409,
+        "This table number and label belong to different archived tables",
+      );
+    }
+
+    const archivedTable = archivedByNumber || archivedByLabel;
+    if (archivedTable) {
+      const table = await prisma.table.update({
+        where: { id: archivedTable.id },
+        data: {
+          ...getTableWriteData(req.body, req.restaurantId, area.id, label),
+          isActive: true,
+          status: "AVAILABLE",
+          currentOrderId: null,
+        },
+        include: tableInclude,
+      });
+      await writeAudit(req, "TABLE_RESTORED", "Table", table.id, {
         areaId: area.id,
         label,
-        combinationGroup: req.body.isCombinable
-          ? normalizeCombinationGroup(req.body.combinationGroup)
-          : null,
-        restaurantId: req.restaurantId,
-      },
+      });
+      emitTable(req.restaurantId, table);
+      return res.status(201).json({ success: true, data: table });
+    }
+
+    const table = await prisma.table.create({
+      data: getTableWriteData(req.body, req.restaurantId, area.id, label),
       include: tableInclude,
     });
     await writeAudit(req, "TABLE_CREATED", "Table", table.id, {

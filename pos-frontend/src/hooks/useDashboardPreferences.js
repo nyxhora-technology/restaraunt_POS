@@ -36,10 +36,26 @@ const useDashboardPreferences = () => {
       mobileQuery.removeEventListener("change", handleViewportChange);
   }, []);
 
+  useEffect(() => {
+    const handlePreferencesChange = () => {
+      setTheme(localStorage.getItem(THEME_KEY) || getSystemTheme());
+      setLayout(localStorage.getItem(LAYOUT_KEY) || "sidebar");
+    };
+
+    window.addEventListener("dashboard-preferences-changed", handlePreferencesChange);
+    window.addEventListener("storage", handlePreferencesChange);
+
+    return () => {
+      window.removeEventListener("dashboard-preferences-changed", handlePreferencesChange);
+      window.removeEventListener("storage", handlePreferencesChange);
+    };
+  }, []);
+
   const toggleTheme = () => {
     setTheme((current) => {
       const next = current === "dark" ? "light" : "dark";
       localStorage.setItem(THEME_KEY, next);
+      window.dispatchEvent(new Event("dashboard-preferences-changed"));
       return next;
     });
   };
@@ -48,6 +64,7 @@ const useDashboardPreferences = () => {
     setLayout((current) => {
       const next = current === "sidebar" ? "bottom" : "sidebar";
       localStorage.setItem(LAYOUT_KEY, next);
+      window.dispatchEvent(new Event("dashboard-preferences-changed"));
       return next;
     });
   };
