@@ -4,11 +4,17 @@ const prisma = require("../config/prisma");
 const config = require("../config/config");
 
 const email = `smoke-${crypto.randomUUID()}@example.com`;
+const managerEmail = `smoke-manager-${crypto.randomUUID()}@example.com`;
+const cashierEmail = `smoke-cashier-${crypto.randomUUID()}@example.com`;
 const waiterEmail = `smoke-waiter-${crypto.randomUUID()}@example.com`;
+const kitchenEmail = `smoke-kitchen-${crypto.randomUUID()}@example.com`;
 const adminEmail = `smoke-admin-${crypto.randomUUID()}@example.com`;
 let cookie = "";
 let userId;
+let managerId;
+let cashierId;
 let waiterId;
+let kitchenId;
 let adminId;
 let restaurantId;
 
@@ -36,6 +42,69 @@ const request = async (path, options = {}) => {
   return body;
 };
 
+const assertHttpStatus = async (path, expectedStatus, options = {}) => {
+  const response = await fetch(`${config.backendUrl}${path}`, {
+    signal: AbortSignal.timeout(15000),
+    ...options,
+    headers: {
+      "content-type": "application/json",
+      origin: config.frontendUrl,
+      ...(cookie && { cookie }),
+      ...options.headers,
+    },
+  });
+  const body = await response.json().catch(() => ({}));
+  assert.equal(
+    response.status,
+    expectedStatus,
+    `${options.method || "GET"} ${path}: expected ${expectedStatus}, got ${
+      response.status
+    } ${body.message || ""}`,
+  );
+  return body;
+};
+
+const signInInvitedStaff = async ({
+  ownerCookie,
+  name,
+  email,
+  phone,
+  role,
+  newPassword,
+}) => {
+  cookie = ownerCookie;
+  const invitation = await request("/api/restaurant/staff/invite", {
+    method: "POST",
+    body: JSON.stringify({ name, email, phone, role }),
+  });
+
+  await request("/api/auth/sign-in/email", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      password: invitation.temporaryPassword,
+    }),
+  });
+  const context = await request("/api/restaurant/context");
+  assert.equal(context.data.email, email);
+  assert.equal(context.data.role, role);
+  assert.equal(context.data.mustChangePassword, true);
+  const restaurant = await request("/api/restaurant/me");
+  assert.equal(restaurant.data.id, restaurantId);
+  await request("/api/restaurant/staff/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      currentPassword: invitation.temporaryPassword,
+      newPassword,
+    }),
+  });
+  const changedContext = await request("/api/restaurant/context");
+  assert.equal(changedContext.data.role, role);
+  assert.equal(changedContext.data.mustChangePassword, false);
+
+  return invitation;
+};
+
 const cleanup = async () => {
   if (restaurantId) {
     await prisma.table.updateMany({
@@ -49,17 +118,34 @@ const cleanup = async () => {
     await prisma.menuItem.deleteMany({ where: { restaurantId } });
     await prisma.menuCategory.deleteMany({ where: { restaurantId } });
     await prisma.auditLog.deleteMany({ where: { restaurantId } });
-    if (userId || waiterId) {
+    if (userId || managerId || cashierId || waiterId || kitchenId) {
       await prisma.user.updateMany({
-        where: { id: { in: [userId, waiterId].filter(Boolean) } },
+        where: {
+          id: {
+            in: [userId, managerId, cashierId, waiterId, kitchenId].filter(
+              Boolean,
+            ),
+          },
+        },
         data: { restaurantId: null },
       });
     }
     await prisma.restaurant.deleteMany({ where: { id: restaurantId } });
   }
-  if (userId || waiterId || adminId) {
+  if (userId || managerId || cashierId || waiterId || kitchenId || adminId) {
     await prisma.user.deleteMany({
-      where: { id: { in: [userId, waiterId, adminId].filter(Boolean) } },
+      where: {
+        id: {
+          in: [
+            userId,
+            managerId,
+            cashierId,
+            waiterId,
+            kitchenId,
+            adminId,
+          ].filter(Boolean),
+        },
+      },
     });
   }
 };
@@ -196,35 +282,44 @@ const run = async () => {
     "Smoke: dining area, table, dine-in and automatic release passed",
   );
 
-  const invitation = await request("/api/restaurant/staff/invite", {
-    method: "POST",
-    body: JSON.stringify({
-      name: "Smoke Test Waiter",
-      email: waiterEmail,
-      phone: "8888888888",
-      role: "WAITER",
-    }),
-  });
-  waiterId = invitation.data.id;
   const ownerCookie = cookie;
-  await request("/api/auth/sign-in/email", {
-    method: "POST",
-    body: JSON.stringify({
-      email: waiterEmail,
-      password: invitation.temporaryPassword,
-    }),
+  const managerInvitation = await signInInvitedStaff({
+    ownerCookie,
+    name: "Smoke Test Manager",
+    email: managerEmail,
+    phone: "6666666666",
+    role: "MANAGER",
+    newPassword: "ManagerSmoke1!",
   });
-  const waiterContext = await request("/api/restaurant/context");
-  assert.equal(waiterContext.data.role, "WAITER");
-  await request("/api/auth/change-password", {
-    method: "POST",
-    body: JSON.stringify({
-      currentPassword: invitation.temporaryPassword,
-      newPassword: "ChangedSmoke1!",
-      revokeOtherSessions: true,
-    }),
+  managerId = managerInvitation.data.id;
+  await request("/api/order/dashboard");
+  await request("/api/restaurant/staff");
+  await assertHttpStatus("/api/admin/stats", 403);
+  console.log("Smoke: manager login and permissions passed");
+
+  const cashierInvitation = await signInInvitedStaff({
+    ownerCookie,
+    name: "Smoke Test Cashier",
+    email: cashierEmail,
+    phone: "5555555555",
+    role: "CASHIER",
+    newPassword: "CashierSmoke1!",
   });
-  console.log("Smoke: waiter access passed");
+  cashierId = cashierInvitation.data.id;
+  await request("/api/order");
+  await assertHttpStatus("/api/order/dashboard", 403);
+  console.log("Smoke: cashier login and permissions passed");
+
+  const waiterInvitation = await signInInvitedStaff({
+    ownerCookie,
+    name: "Smoke Test Waiter",
+    email: waiterEmail,
+    phone: "8888888888",
+    role: "WAITER",
+    newPassword: "ChangedSmoke1!",
+  });
+  waiterId = waiterInvitation.data.id;
+  console.log("Smoke: waiter login passed");
 
   const takeaway = await request("/api/order", {
     method: "POST",
@@ -253,12 +348,49 @@ const run = async () => {
   console.log("Smoke: waiter order creation and item update passed");
 
   cookie = ownerCookie;
+  const kitchenInvitation = await request("/api/restaurant/staff/invite", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Smoke Test Kitchen",
+      email: kitchenEmail,
+      phone: "7777777777",
+      role: "KITCHEN",
+    }),
+  });
+  kitchenId = kitchenInvitation.data.id;
+  await request("/api/auth/sign-in/email", {
+    method: "POST",
+    body: JSON.stringify({
+      email: kitchenEmail,
+      password: kitchenInvitation.temporaryPassword,
+    }),
+  });
+  const kitchenContext = await request("/api/restaurant/context");
+  assert.equal(kitchenContext.data.role, "KITCHEN");
+  const kitchenRestaurant = await request("/api/restaurant/me");
+  assert.equal(kitchenRestaurant.data.id, restaurantId);
+  await request("/api/restaurant/staff/change-password", {
+    method: "POST",
+    body: JSON.stringify({
+      currentPassword: kitchenInvitation.temporaryPassword,
+      newPassword: "KitchenSmoke1!",
+    }),
+  });
+  const kitchenQueue = await request("/api/order/kitchen");
+  assert.ok(
+    kitchenQueue.data.some(
+      (activeOrder) => activeOrder.id === takeaway.data.id,
+    ),
+  );
   for (const orderStatus of ["ACCEPTED", "PREPARING", "READY"]) {
     await request(`/api/order/${takeaway.data.id}/status`, {
       method: "PUT",
       body: JSON.stringify({ orderStatus }),
     });
   }
+  console.log("Smoke: kitchen login and order progression passed");
+
+  cookie = ownerCookie;
   await request(`/api/payment/cash/${takeaway.data.id}`, { method: "POST" });
   const completedTakeaway = await request(`/api/order/${takeaway.data.id}`);
   assert.equal(completedTakeaway.data.orderStatus, "COMPLETED");

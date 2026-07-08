@@ -5,12 +5,15 @@ const config = require("../config/config");
 
 const PASSWORD_CHANGE_ALLOWED_PATHS = [
   "/api/restaurant/context",
+  "/api/restaurant/me",
   "/api/restaurant/staff/change-password",
 ];
 
 const isPasswordChangeAllowedPath = (req) =>
   req.originalUrl?.startsWith("/api/auth/") ||
-  PASSWORD_CHANGE_ALLOWED_PATHS.some((path) => req.originalUrl?.startsWith(path));
+  PASSWORD_CHANGE_ALLOWED_PATHS.some((path) =>
+    req.originalUrl?.startsWith(path),
+  );
 
 const loadRequestUser = async (req) => {
   const session = await auth.api.getSession({ headers: req.headers });
