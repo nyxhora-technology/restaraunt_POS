@@ -1083,7 +1083,7 @@
   --landing-panel: #ffffff;
   background: var(--landing-bg);
   color: var(--landing-ink);
-  font-family: Inter, system-ui, sans-serif;
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
 }
 .landing-v2 .landing-nav {
   max-width: 1280px;
