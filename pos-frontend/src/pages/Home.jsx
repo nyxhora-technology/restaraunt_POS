@@ -8,6 +8,8 @@ import { GrInProgress } from "react-icons/gr";
 import {
   MdAdminPanelSettings,
   MdOutlineAccessTime,
+  MdWavingHand,
+  MdWarning,
   MdOutlineLocalOffer,
   MdOutlineMenuBook,
   MdOutlineReceiptLong,
@@ -231,7 +233,7 @@ const Home = () => {
               <div>
                 <p className="analytics-eyebrow">Live operations</p>
                 <h1>
-                  {greeting}, {user.name?.split(" ")[0] || "there"}! <span>👋</span>
+                  {greeting}, {user.name?.split(" ")[0] || "there"}! <span><MdWavingHand /></span>
                 </h1>
                 <p>
                   {dashboard.restaurantName ||
@@ -241,10 +243,10 @@ const Home = () => {
                 </p>
                 {/* Restaurant status warning — genuinely useful information */}
                 {user.restaurant?.status === "SUSPENDED" && (
-                  <div className="dashboard-status-badge is-suspended">⚠️ Account suspended — contact support</div>
+                  <div className="dashboard-status-badge is-suspended"><MdWarning /> Account suspended — contact support</div>
                 )}
                 {user.restaurant?.status === "PENDING" && (
-                  <div className="dashboard-status-badge is-pending">⏳ Pending approval — some features are locked</div>
+                  <div className="dashboard-status-badge is-pending"><MdOutlineAccessTime /> Pending approval — some features are locked</div>
                 )}
               </div>
               <div className="dashboard-header-actions">

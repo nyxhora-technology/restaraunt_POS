@@ -32,7 +32,7 @@
 .marketing-hero { position: relative; max-width: 1180px; margin: auto; padding: 112px 28px 90px; text-align: center; }
 .marketing-glow { position: absolute; top: -280px; left: 50%; width: 860px; height: 620px; border-radius: 50%; background: radial-gradient(circle, rgba(34,139,143,.25), transparent 68%); transform: translateX(-50%); pointer-events: none; }
 .marketing-eyebrow { position: relative; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(53,192,195,.28); border-radius: 999px; background: rgba(53,192,195,.08); color: #78dadd; padding: 8px 13px; font-size: 12px; font-weight: 750; text-transform: uppercase; letter-spacing: .08em; }
-.marketing-hero h1 { position: relative; max-width: 950px; margin: 27px auto 22px; font-size: clamp(54px, 7.5vw, 94px); font-weight: 760; line-height: .99; letter-spacing: -.065em; }
+.marketing-hero h1 { position: relative; max-width: 950px; margin: 27px auto 22px; font-size: clamp(54px, 7.5vw, 94px); font-weight: 760; line-height: 1.02; letter-spacing: -.065em; }
 .marketing-hero h1 em { color: #35c0c3; font-family: Georgia, serif; font-weight: 400; }
 .marketing-hero > p { max-width: 690px; margin: auto; color: var(--muted); font-size: 18px; line-height: 1.7; }
 .marketing-hero-actions { justify-content: center; gap: 25px; margin-top: 34px; }
