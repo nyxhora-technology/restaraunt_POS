@@ -6,6 +6,7 @@ const {
   updateMyRestaurant,
   listStaff,
   inviteStaff,
+  resetStaffPassword,
   removeStaff,
   changeFirstPassword,
 } = require("../controllers/restaurantController");
@@ -71,6 +72,13 @@ router.post(
     }),
   ),
   inviteStaff,
+);
+router.post(
+  "/staff/:userId/reset-password",
+  requireTenant,
+  requireRole("OWNER"),
+  validate(z.object({})),
+  resetStaffPassword,
 );
 router.delete(
   "/staff/:userId",

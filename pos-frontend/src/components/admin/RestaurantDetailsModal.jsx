@@ -8,6 +8,7 @@ import {
 } from "../../https";
 import { formatDateAndTime } from "../../utils";
 import { enqueueSnackbar } from "notistack";
+import CustomSelect from "../shared/CustomSelect";
 
 const statusStyles = {
   PENDING: "bg-[#4a452e] text-yellow-300",
@@ -108,21 +109,23 @@ const RestaurantDetailsModal = ({
                   <span className="text-xs font-semibold text-[var(--dash-muted)] uppercase tracking-wider">
                     Plan:
                   </span>
-                  <select
-                    value={restaurant.plan || "STARTER"}
-                    onChange={(e) =>
-                      planMutation.mutate({
-                        restaurantId,
-                        plan: e.target.value,
-                      })
-                    }
-                    disabled={planMutation.isPending}
-                    className="bg-[var(--dash-surface-muted)] border border-[var(--dash-border)] text-[var(--dash-text)] text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--dash-primary)] transition-colors disabled:opacity-50 cursor-pointer shadow-sm"
-                  >
-                    <option value="STARTER">Starter</option>
-                    <option value="PROFESSIONAL">Professional</option>
-                    <option value="ENTERPRISE">Enterprise</option>
-                  </select>
+                  <div className="w-40">
+                    <CustomSelect
+                      value={restaurant.plan || "STARTER"}
+                      onChange={(e) =>
+                        planMutation.mutate({
+                          restaurantId,
+                          plan: e.target.value,
+                        })
+                      }
+                      disabled={planMutation.isPending}
+                      options={[
+                        { value: "STARTER", label: "Starter" },
+                        { value: "PROFESSIONAL", label: "Professional" },
+                        { value: "ENTERPRISE", label: "Enterprise" }
+                      ]}
+                    />
+                  </div>
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">

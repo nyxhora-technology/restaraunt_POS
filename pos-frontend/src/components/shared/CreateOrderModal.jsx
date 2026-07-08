@@ -5,6 +5,7 @@ import { enqueueSnackbar } from "notistack";
 import { removeCustomer, setCustomer } from "../../redux/slices/customerSlice";
 import { removeAllItems } from "../../redux/slices/cartSlice";
 import Modal from "./Modal";
+import CustomSelect from "./CustomSelect";
 import { MdShoppingBag, MdTableRestaurant, MdArrowForward } from "react-icons/md";
 
 // ── Step 1: Dine In / Takeaway choice ───────────────────────────────────────
@@ -203,13 +204,19 @@ const CreateOrderModal = ({
 
         <label className={`${labelClass} mt-4`}>Customer Phone</label>
         <div className={fieldClass}>
-          <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className={dashboardVariant ? "bg-transparent text-[var(--dash-text)] outline-none border-none pr-1 mr-2 border-r border-[var(--dash-border)] cursor-pointer" : "bg-transparent text-white outline-none border-none pr-1 mr-2 border-r border-[#333] cursor-pointer"}>
-            <option value="+91">🇮🇳 +91</option>
-            <option value="+1">🇺🇸 +1</option>
-            <option value="+44">🇬🇧 +44</option>
-            <option value="+61">🇦🇺 +61</option>
-            <option value="+971">🇦🇪 +971</option>
-          </select>
+          <div className="w-28 shrink-0 mr-2">
+            <CustomSelect
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              options={[
+                { value: "+91", label: "🇮🇳 +91" },
+                { value: "+1", label: "🇺🇸 +1" },
+                { value: "+44", label: "🇬🇧 +44" },
+                { value: "+61", label: "🇦🇺 +61" },
+                { value: "+971", label: "🇦🇪 +971" }
+              ]}
+            />
+          </div>
           <input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} type="tel" placeholder="9999999999" className={inputClass} />
         </div>
 
@@ -251,13 +258,19 @@ const CreateOrderModal = ({
 
           <label className={`${labelClass} mt-4`}>Customer Phone</label>
           <div className={fieldClass}>
-            <select value={countryCode} onChange={(e) => setCountryCode(e.target.value)} className={dashboardVariant ? "bg-transparent text-[var(--dash-text)] outline-none border-none pr-1 mr-2 border-r border-[var(--dash-border)] cursor-pointer" : "bg-transparent text-white outline-none border-none pr-1 mr-2 border-r border-[#333] cursor-pointer"}>
-              <option value="+91">🇮🇳 +91</option>
-              <option value="+1">🇺🇸 +1</option>
-              <option value="+44">🇬🇧 +44</option>
-              <option value="+61">🇦🇺 +61</option>
-              <option value="+971">🇦🇪 +971</option>
-            </select>
+            <div className="w-28 shrink-0 mr-2">
+              <CustomSelect
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+                options={[
+                  { value: "+91", label: "🇮🇳 +91" },
+                  { value: "+1", label: "🇺🇸 +1" },
+                  { value: "+44", label: "🇬🇧 +44" },
+                  { value: "+61", label: "🇦🇺 +61" },
+                  { value: "+971", label: "🇦🇪 +971" }
+                ]}
+              />
+            </div>
             <input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))} type="tel" placeholder="9999999999" className={inputClass} />
           </div>
 

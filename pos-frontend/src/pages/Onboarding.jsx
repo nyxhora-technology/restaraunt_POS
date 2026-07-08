@@ -21,6 +21,7 @@ import {
   HiX,
   HiOutlineRefresh,
 } from "react-icons/hi";
+import CustomSelect from "../components/shared/CustomSelect";
 
 const STEPS = [
   { id: "basics",   label: "Restaurant Info", icon: HiOutlineOfficeBuilding },
@@ -411,16 +412,13 @@ export default function Onboarding() {
               <div className="onboarding-fields">
                 <label className="onboarding-field">
                   <span><HiOutlineCurrencyDollar /> Currency</span>
-                  <select
+                  <CustomSelect
                     value={formData.currency}
                     onChange={(e) => update("currency", e.target.value)}
-                    className="onboarding-select"
+                    className="onboarding-select-wrapper"
+                    options={CURRENCIES}
                     required
-                  >
-                    {CURRENCIES.map(({ value, label }) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                  </select>
+                  />
                 </label>
                 <label className="onboarding-field">
                   <span><HiOutlineDocumentText /> Short Description <em>(optional)</em></span>

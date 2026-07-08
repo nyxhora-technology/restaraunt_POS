@@ -694,6 +694,60 @@
   color: var(--dash-text);
 }
 
+.staff-temp-password-panel {
+  border: 1px solid color-mix(in srgb, var(--dash-primary) 35%, var(--dash-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--dash-primary-soft) 45%, var(--dash-surface));
+  padding: 14px;
+}
+
+.staff-temp-password-label {
+  color: var(--dash-text);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.staff-temp-password-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.staff-temp-password-value code {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--dash-border);
+  border-radius: 8px;
+  background: var(--dash-surface);
+  color: var(--dash-text);
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.staff-temp-password-value button {
+  flex: 0 0 auto;
+  border-radius: 8px;
+  background: var(--dash-primary);
+  color: #071011;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.staff-temp-password-value button:hover {
+  background: var(--dash-primary-strong);
+}
+
+.staff-temp-password-help {
+  margin-top: 8px;
+  color: var(--dash-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .dashboard-management-row,
 .dashboard-management-section {
   border: 1px solid var(--dash-border);

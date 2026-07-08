@@ -7,15 +7,42 @@ const emitInventory = (restaurantId) => {
   getIo().to(`restaurant:${restaurantId}`).emit("inventory:updated");
 };
 
+const getStockPercent = (item) =>
+  item.totalStock > 0 ? Math.round((item.currentStock / item.totalStock) * 100) : 0;
+
+const getLowStockStatus = (item) => {
+  if (!item.alertEnabled) {
+    return { isLowStock: false, isCritical: false, alertLevel: null, alertBasis: "disabled" };
+  }
+
+  if (item.reorderPoint != null) {
+    const isLowStock = item.currentStock <= item.reorderPoint;
+    const isCritical = item.currentStock <= item.reorderPoint / 2;
+    return {
+      isLowStock,
+      isCritical,
+      alertLevel: isCritical ? "CRITICAL" : isLowStock ? "WARNING" : null,
+      alertBasis: "quantity",
+    };
+  }
+
+  const stockPercent = getStockPercent(item);
+  const isLowStock = stockPercent <= item.alertThreshold;
+  const isCritical = stockPercent <= item.alertThreshold / 2;
+  return {
+    isLowStock,
+    isCritical,
+    alertLevel: isCritical ? "CRITICAL" : isLowStock ? "WARNING" : null,
+    alertBasis: "percent",
+  };
+};
+
 const checkAndFireAlerts = async (item, restaurantId) => {
-  if (!item.alertEnabled || item.totalStock <= 0) return;
-  const pct = (item.currentStock / item.totalStock) * 100;
+  const pct = item.totalStock > 0 ? (item.currentStock / item.totalStock) * 100 : 0;
+  const status = getLowStockStatus(item);
 
-  let level = null;
-  if (pct <= item.alertThreshold / 2) level = "CRITICAL";
-  else if (pct <= item.alertThreshold) level = "WARNING";
-
-  if (!level) return;
+  if (!status.alertLevel) return;
+  const level = status.alertLevel;
 
   const message =
     level === "CRITICAL"
@@ -76,15 +103,19 @@ const listItems = async (req, res, next) => {
         supplierRef: { select: { id: true, name: true } },
       },
     });
-    const enriched = items.map((item) => ({
-      ...item,
-      stockPercent: item.totalStock > 0 ? Math.round((item.currentStock / item.totalStock) * 100) : 0,
-      needsReorder: item.reorderPoint != null && item.currentStock <= item.reorderPoint,
-      isExpired: item.expiryDate ? new Date(item.expiryDate) < new Date() : false,
-      daysUntilExpiry: item.expiryDate
-        ? Math.ceil((new Date(item.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
-        : null,
-    }));
+    const enriched = items.map((item) => {
+      const lowStockStatus = getLowStockStatus(item);
+      return {
+        ...item,
+        ...lowStockStatus,
+        stockPercent: getStockPercent(item),
+        needsReorder: item.reorderPoint != null && item.currentStock <= item.reorderPoint,
+        isExpired: item.expiryDate ? new Date(item.expiryDate) < new Date() : false,
+        daysUntilExpiry: item.expiryDate
+          ? Math.ceil((new Date(item.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
+          : null,
+      };
+    });
     res.json({ success: true, data: enriched });
   } catch (error) {
     next(error);
@@ -122,6 +153,7 @@ const createItem = async (req, res, next) => {
     await prisma.inventoryLog.create({
       data: { inventoryItemId: item.id, type: "RESTOCK", quantity: item.currentStock, stockAfter: item.currentStock, note: "Initial stock" },
     });
+    await checkAndFireAlerts(item, req.restaurantId);
     await checkExpiryAlerts(item, req.restaurantId);
     await writeAudit(req, "INVENTORY_ITEM_CREATED", "InventoryItem", item.id);
     emitInventory(req.restaurantId);
@@ -155,6 +187,7 @@ const updateItem = async (req, res, next) => {
         location: location !== undefined ? location || null : existing.location,
       },
     });
+    await checkAndFireAlerts(item, req.restaurantId);
     await checkExpiryAlerts(item, req.restaurantId);
     await writeAudit(req, "INVENTORY_ITEM_UPDATED", "InventoryItem", item.id, req.body);
     emitInventory(req.restaurantId);

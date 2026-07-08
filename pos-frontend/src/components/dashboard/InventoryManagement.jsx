@@ -83,9 +83,7 @@ const InventoryManagement = () => {
           (item) => item.menuItem?.category?.id === categoryFilter,
         );
 
-  const lowStockCount = allItems.filter(
-    (i) => i.stockPercent <= i.alertThreshold,
-  ).length;
+  const lowStockCount = allItems.filter((i) => i.isLowStock).length;
   const outOfStockCount = allItems.filter((i) => i.currentStock <= 0).length;
 
   const handleRestock = (e) => {
@@ -182,9 +180,8 @@ const InventoryManagement = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {items.map((item) => {
-            const isCritical = item.stockPercent <= item.alertThreshold / 2;
-            const isWarning =
-              !isCritical && item.stockPercent <= item.alertThreshold;
+            const isCritical = item.isCritical;
+            const isWarning = item.isLowStock && !isCritical;
             const barColor = isCritical
               ? "bg-red-500"
               : isWarning
@@ -263,12 +260,11 @@ const InventoryManagement = () => {
                   ></div>
                 </div>
 
-                {item.alertEnabled &&
-                  item.stockPercent <= item.alertThreshold && (
+                {item.alertEnabled && item.isLowStock && (
                     <p
                       className={`text-xs mt-2 ${isCritical ? "text-red-400" : "text-yellow-400"}`}
                     >
-                      ⚠️ Stock drops below threshold ({item.alertThreshold}%)
+                    Stock drops below {item.alertBasis === "quantity" && item.reorderPoint != null ? `${item.reorderPoint} ${item.unit}` : `${item.alertThreshold}%`}
                     </p>
                   )}
               </div>

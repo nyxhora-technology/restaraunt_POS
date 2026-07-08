@@ -182,12 +182,6 @@ const DashboardTopbar = ({
             <span className="dashboard-user-avatar">
               {avatarInitial}
             </span>
-            <span className="dashboard-user-copy">
-              <span className="dashboard-user-kicker">Logged in as</span>
-              <strong>{displayName}</strong>
-              <small>{displayEmail}</small>
-            </span>
-            <span className="dashboard-user-role">{displayRole}</span>
             <MdKeyboardArrowDown
               className={isProfileOpen ? "is-rotated" : ""}
             />

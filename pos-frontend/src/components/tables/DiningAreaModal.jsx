@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { addDiningArea, getErrorMessage, updateDiningArea } from "../../https";
 import Modal from "../shared/Modal";
+import CustomSelect from "../shared/CustomSelect";
 import { CLIMATE_LABELS, EXPERIENCE_LABELS } from "./tableOptions";
 
 const createInitialForm = (area) => ({
@@ -119,35 +120,31 @@ const DiningAreaModal = ({ isOpen, onClose, area = null }) => {
           <label>
             <span className="dashboard-modal-label">Climate</span>
             <div className="dashboard-modal-field">
-              <select
-                className="dashboard-modal-input"
+              <CustomSelect
+                className="w-full"
                 name="climate"
                 value={form.climate}
                 onChange={updateField}
-              >
-                {Object.entries(CLIMATE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                options={Object.entries(CLIMATE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))}
+              />
             </div>
           </label>
           <label>
             <span className="dashboard-modal-label">Experience</span>
             <div className="dashboard-modal-field">
-              <select
-                className="dashboard-modal-input"
+              <CustomSelect
+                className="w-full"
                 name="experience"
                 value={form.experience}
                 onChange={updateField}
-              >
-                {Object.entries(EXPERIENCE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                options={Object.entries(EXPERIENCE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))}
+              />
             </div>
           </label>
         </div>

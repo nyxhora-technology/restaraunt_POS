@@ -22,6 +22,7 @@ import {
 } from "../../https";
 import useFeature from "../../hooks/useFeature";
 import UpgradeBanner from "../shared/UpgradeBanner";
+import CustomSelect from "../shared/CustomSelect";
 
 dayjs.extend(relativeTime);
 
@@ -315,18 +316,19 @@ const QrManagement = () => {
               <label className="block text-sm text-[var(--dash-muted)] mb-1">
                 Link to Table (Optional)
               </label>
-              <select
+              <CustomSelect
+                className="w-full"
+                name="newTableId"
                 value={newTableId}
                 onChange={(e) => setNewTableId(e.target.value)}
-                className="dashboard-form-control w-full px-4 py-3 rounded-lg focus:outline-none"
-              >
-                <option value="">— No specific table —</option>
-                {tables.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label || `Table ${t.tableNo}`} ({t.seats} seats)
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: "— No specific table —" },
+                  ...tables.map((t) => ({
+                    value: t.id,
+                    label: `${t.label || `Table ${t.tableNo}`} (${t.seats} seats)`
+                  }))
+                ]}
+              />
               <p className="text-xs text-[#6b7280] mt-1">
                 Table-linked QRs show the table number on the menu page.
               </p>

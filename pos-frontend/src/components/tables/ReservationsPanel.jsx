@@ -10,6 +10,7 @@ import {
 } from "../../https";
 import useFeature from "../../hooks/useFeature";
 import { getTableLabel } from "./tableOptions";
+import CustomSelect from "../shared/CustomSelect";
 
 const initialForm = {
   tableId: "",
@@ -89,7 +90,21 @@ const ReservationsPanel = ({ tables }) => {
           <label>Phone<input required value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="+91 98765 43210" /></label>
           <label>Party size<input required type="number" min="1" max="100" value={form.partySize} onChange={(event) => setForm({ ...form, partySize: event.target.value })} /></label>
         </div>
-        <label>Table<select required value={form.tableId} onChange={(event) => setForm({ ...form, tableId: event.target.value })}><option value="">Choose a table</option>{tables.filter((table) => table.isActive !== false).map((table) => <option key={table.id} value={table.id}>{getTableLabel(table)} · {table.seats} seats</option>)}</select></label>
+        <label>
+          Table
+          <CustomSelect
+            required
+            value={form.tableId}
+            onChange={(event) => setForm({ ...form, tableId: event.target.value })}
+            options={[
+              { value: "", label: "Choose a table" },
+              ...tables.filter((table) => table.isActive !== false).map((table) => ({
+                value: table.id,
+                label: `${getTableLabel(table)} · ${table.seats} seats`
+              }))
+            ]}
+          />
+        </label>
         <label>Date and time<input required type="datetime-local" min={new Date().toISOString().slice(0, 16)} value={form.reservedAt} onChange={(event) => setForm({ ...form, reservedAt: event.target.value })} /></label>
         <label>Service note<textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} placeholder="High chair, anniversary, accessibility…" /></label>
         <button type="submit" disabled={createMutation.isPending}>{createMutation.isPending ? "Reserving…" : "Reserve table"}</button>

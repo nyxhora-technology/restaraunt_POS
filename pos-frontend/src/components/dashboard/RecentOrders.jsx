@@ -14,6 +14,7 @@ import {
 import { formatDateAndTime } from "../../utils";
 import useRoleDashboard from "../../hooks/useRoleDashboard";
 import { getOrderTableLabel } from "../tables/tableOptions";
+import CustomSelect from "../shared/CustomSelect";
 
 const transitions = {
   OWNER: {
@@ -79,24 +80,28 @@ const RecentOrders = () => {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <select
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-            className="bg-[var(--dash-surface-muted)] text-[var(--dash-text)] border border-[var(--dash-border)] rounded px-2 py-1 text-sm focus:outline-none"
-          >
-            <option value="desc">Newest first</option>
-            <option value="asc">Oldest first</option>
-          </select>
-          <select
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-            className="bg-[var(--dash-surface-muted)] text-[var(--dash-text)] border border-[var(--dash-border)] rounded px-2 py-1 text-sm focus:outline-none"
-          >
-            <option value={10}>Top 10</option>
-            <option value={20}>Top 20</option>
-            <option value={50}>Top 50</option>
-            <option value={100}>Top 100</option>
-          </select>
+          <div className="w-36">
+            <CustomSelect
+              value={sortOrder}
+              onChange={(e) => setSortOrder(e.target.value)}
+              options={[
+                { value: "desc", label: "Newest first" },
+                { value: "asc", label: "Oldest first" },
+              ]}
+            />
+          </div>
+          <div className="w-28">
+            <CustomSelect
+              value={limit}
+              onChange={(e) => setLimit(Number(e.target.value))}
+              options={[
+                { value: 10, label: "Top 10" },
+                { value: 20, label: "Top 20" },
+                { value: 50, label: "Top 50" },
+                { value: 100, label: "Top 100" },
+              ]}
+            />
+          </div>
           <span className="text-sm text-[var(--dash-muted)]">
             {orders.length} shown
           </span>
@@ -130,35 +135,29 @@ const RecentOrders = () => {
                   </p>
                 </td>
                 <td className="p-4">
-                  <select
-                    className={`dashboard-table-select p-2 rounded-lg focus:outline-none ${
-                      order.orderStatus === "READY"
-                        ? "text-green-500"
-                        : "text-yellow-500"
-                    }`}
-                    value={order.orderStatus}
-                    disabled={
-                      orderStatusUpdateMutation.isPending &&
-                      orderStatusUpdateMutation.variables?.orderId === order.id
-                    }
-                    onChange={(event) =>
-                      orderStatusUpdateMutation.mutate({
-                        orderId: order.id,
-                        orderStatus: event.target.value,
-                      })
-                    }
-                  >
-                    <option value={order.orderStatus}>
-                      {order.orderStatus.replaceAll("_", " ")}
-                    </option>
-                    {(transitions[role]?.[order.orderStatus] || []).map(
-                      (status) => (
-                        <option key={status} value={status}>
-                          Mark {status.replaceAll("_", " ")}
-                        </option>
-                      ),
-                    )}
-                  </select>
+                  <div className="w-40">
+                    <CustomSelect
+                      className={order.orderStatus === "READY" ? "text-green-500" : "text-yellow-500"}
+                      value={order.orderStatus}
+                      disabled={
+                        orderStatusUpdateMutation.isPending &&
+                        orderStatusUpdateMutation.variables?.orderId === order.id
+                      }
+                      onChange={(event) =>
+                        orderStatusUpdateMutation.mutate({
+                          orderId: order.id,
+                          orderStatus: event.target.value,
+                        })
+                      }
+                      options={[
+                        { value: order.orderStatus, label: order.orderStatus.replaceAll("_", " ") },
+                        ...(transitions[role]?.[order.orderStatus] || []).map(status => ({
+                          value: status,
+                          label: `Mark ${status.replaceAll("_", " ")}`
+                        }))
+                      ]}
+                    />
+                  </div>
                 </td>
                 <td className="p-4">{formatDateAndTime(order.createdAt)}</td>
                 <td className="p-4">

@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { hashPassword } = require("better-auth/crypto");
 const prisma = require("../config/prisma");
 const auth = require("../config/auth");
 const config = require("../config/config");
@@ -234,7 +235,7 @@ const inviteStaff = async (req, res, next) => {
     }
 
     // ── New user path: create account with temporary password ──────────────────
-    const temporaryPassword = `${crypto.randomBytes(9).toString("base64url")}aA1!`;
+    const temporaryPassword = createTemporaryPassword();
     const result = await auth.api.signUpEmail({
       body: { name, email, password: temporaryPassword, phone },
     });
@@ -259,6 +260,68 @@ const inviteStaff = async (req, res, next) => {
       data: staff,
       temporaryPassword,
       message: "Staff account created. Share the temporary password securely.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const createTemporaryPassword = () => `${crypto.randomBytes(9).toString("base64url")}aA1!`;
+
+const resetStaffPassword = async (req, res, next) => {
+  try {
+    const staff = await prisma.user.findFirst({
+      where: {
+        id: req.params.userId,
+        restaurantId: req.restaurantId,
+      },
+      select: { id: true, name: true, email: true, phone: true, role: true },
+    });
+    if (!staff) throw createHttpError(404, "Staff member not found");
+    if (staff.role === "OWNER") {
+      throw createHttpError(403, "The restaurant owner password cannot be reset here");
+    }
+
+    const temporaryPassword = createTemporaryPassword();
+    const passwordHash = await hashPassword(temporaryPassword);
+    const credentialAccount = await prisma.account.findFirst({
+      where: { userId: staff.id, providerId: "credential" },
+      select: { id: true },
+    });
+
+    await prisma.$transaction([
+      credentialAccount
+        ? prisma.account.update({
+            where: { id: credentialAccount.id },
+            data: { password: passwordHash },
+          })
+        : prisma.account.create({
+            data: {
+              userId: staff.id,
+              providerId: "credential",
+              accountId: staff.id,
+              password: passwordHash,
+            },
+          }),
+      prisma.user.update({
+        where: { id: staff.id },
+        data: { mustChangePassword: true },
+      }),
+      prisma.session.deleteMany({ where: { userId: staff.id } }),
+    ]);
+
+    await writeAudit(req, "STAFF_PASSWORD_RESET", "User", staff.id, { role: staff.role });
+    await sendEmail({
+      to: staff.email,
+      subject: `Your ${req.restaurant.name} password was reset`,
+      html: `<p>Your temporary password has been reset.</p><p>Temporary password: <strong>${temporaryPassword}</strong></p><p>Sign in and change your password immediately.</p>`,
+    }).catch((error) => console.error("Password reset email failed:", error.message));
+
+    res.json({
+      success: true,
+      data: staff,
+      temporaryPassword,
+      message: "Temporary password reset. Share it securely with the staff member.",
     });
   } catch (error) {
     next(error);
@@ -358,6 +421,7 @@ module.exports = {
   updateMyRestaurant,
   listStaff,
   inviteStaff,
+  resetStaffPassword,
   removeStaff,
   changeFirstPassword,
 };

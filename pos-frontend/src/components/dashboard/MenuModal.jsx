@@ -10,6 +10,7 @@ import {
   updateCategory,
   updateMenuItem,
 } from "../../https";
+import CustomSelect from "../shared/CustomSelect";
 
 const MenuModal = ({ action, onClose, record }) => {
   const queryClient = useQueryClient();
@@ -142,21 +143,22 @@ const MenuModal = ({ action, onClose, record }) => {
                 required
               />
             )}
-            <select
+            <CustomSelect
+              className="w-full mb-3"
+              name="categoryId"
               value={form.categoryId}
               onChange={(event) =>
                 setForm({ ...form, categoryId: event.target.value })
               }
-              className="dashboard-form-control w-full p-4 rounded-lg mb-3"
               required
-            >
-              <option value="">Select category</option>
-              {(menuQuery.data?.data.data || []).map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "Select category" },
+                ...(menuQuery.data?.data.data || []).map((category) => ({
+                  value: category.id,
+                  label: category.name
+                }))
+              ]}
+            />
             <textarea
               value={form.description}
               onChange={(event) =>

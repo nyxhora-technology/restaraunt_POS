@@ -13,6 +13,7 @@ import {
   SHAPE_LABELS,
   TABLE_STATUS_LABELS,
 } from "./tableOptions";
+import CustomSelect from "../shared/CustomSelect";
 
 const createInitialForm = (table) => ({
   tableNo: table?.tableNo ?? "",
@@ -152,21 +153,17 @@ const TableFormModal = ({ isOpen, onClose, table = null }) => {
         <label>
           <span className="dashboard-modal-label">Dining area</span>
           <div className="dashboard-modal-field">
-            <select
-              className="dashboard-modal-input"
+            <CustomSelect
+              className="w-full"
               name="areaId"
               value={form.areaId}
               onChange={updateField}
-            >
-              {activeAreas.length === 0 && (
-                <option value="">Main Dining (created automatically)</option>
-              )}
-              {activeAreas.map((area) => (
-                <option key={area.id} value={area.id}>
-                  {area.name}
-                </option>
-              ))}
-            </select>
+              options={
+                activeAreas.length === 0
+                  ? [{ value: "", label: "Main Dining (created automatically)" }]
+                  : activeAreas.map((area) => ({ value: area.id, label: area.name }))
+              }
+            />
           </div>
           {activeAreas.length === 0 && !areasQuery.isLoading && (
             <p className="mt-2 text-xs text-[var(--dash-muted)]">
@@ -212,37 +209,30 @@ const TableFormModal = ({ isOpen, onClose, table = null }) => {
           <label>
             <span className="dashboard-modal-label">Table shape</span>
             <div className="dashboard-modal-field">
-              <select
-                className="dashboard-modal-input"
+              <CustomSelect
+                className="w-full"
                 name="shape"
                 value={form.shape}
                 onChange={updateField}
-              >
-                {Object.entries(SHAPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                options={Object.entries(SHAPE_LABELS).map(([value, label]) => ({ value, label }))}
+              />
             </div>
           </label>
           {isEditing && (
             <label>
               <span className="dashboard-modal-label">Operational status</span>
               <div className="dashboard-modal-field">
-                <select
-                  className="dashboard-modal-input"
+                <CustomSelect
+                  className="w-full"
                   name="status"
                   value={form.status}
                   onChange={updateField}
                   disabled={table.status === "OCCUPIED"}
-                >
-                  {getEditableStatuses(table.status).map((status) => (
-                    <option key={status} value={status}>
-                      {TABLE_STATUS_LABELS[status]}
-                    </option>
-                  ))}
-                </select>
+                  options={getEditableStatuses(table.status).map((status) => ({
+                    value: status,
+                    label: TABLE_STATUS_LABELS[status]
+                  }))}
+                />
               </div>
             </label>
           )}

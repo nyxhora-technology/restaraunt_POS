@@ -8,6 +8,7 @@ import {
   getErrorMessage,
 } from "../../https";
 import { IoMdClose } from "react-icons/io";
+import CustomSelect from "../shared/CustomSelect";
 
 const InventoryModal = ({ action, record, onClose }) => {
   const queryClient = useQueryClient();
@@ -20,6 +21,8 @@ const InventoryModal = ({ action, record, onClose }) => {
     alertEnabled: record?.alertEnabled ?? true,
     menuItemId: record?.menuItemId || "",
     variantLabel: record?.variantLabel || "",
+    reorderPoint: record?.reorderPoint ?? "",
+    reorderQuantity: record?.reorderQuantity ?? "",
   });
 
   const { data: menuData } = useQuery({
@@ -74,6 +77,10 @@ const InventoryModal = ({ action, record, onClose }) => {
       currentStock: Number(formData.currentStock),
       totalStock: Number(formData.totalStock || formData.currentStock),
       alertThreshold: Number(formData.alertThreshold),
+      reorderPoint:
+        formData.reorderPoint !== "" ? Number(formData.reorderPoint) : null,
+      reorderQuantity:
+        formData.reorderQuantity !== "" ? Number(formData.reorderQuantity) : null,
     };
 
     if (action === "edit") {
@@ -196,7 +203,9 @@ const InventoryModal = ({ action, record, onClose }) => {
                 <label className="block text-sm text-[var(--dash-muted)] mb-1">
                   Link Menu Item
                 </label>
-                <select
+                <CustomSelect
+                  className="w-full"
+                  name="menuItemId"
                   value={formData.menuItemId || ""}
                   onChange={(e) => {
                     setFormData({
@@ -205,15 +214,14 @@ const InventoryModal = ({ action, record, onClose }) => {
                       variantLabel: "",
                     });
                   }}
-                  className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none"
-                >
-                  <option value="">-- No linked item --</option>
-                  {menuItems.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name} ({m.categoryName})
-                    </option>
-                  ))}
-                </select>
+                  options={[
+                    { value: "", label: "-- No linked item --" },
+                    ...menuItems.map((m) => ({
+                      value: m.id,
+                      label: `${m.name} (${m.categoryName})`
+                    }))
+                  ]}
+                />
               </div>
 
               {variants.length > 0 && (
@@ -221,26 +229,27 @@ const InventoryModal = ({ action, record, onClose }) => {
                   <label className="block text-sm text-[var(--dash-muted)] mb-1">
                     Specific Variant
                   </label>
-                  <select
+                  <CustomSelect
+                    className="w-full"
+                    name="variantLabel"
                     value={formData.variantLabel || ""}
                     onChange={(e) =>
                       setFormData({ ...formData, variantLabel: e.target.value })
                     }
-                    className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none"
-                  >
-                    <option value="">-- All variants --</option>
-                    {variants.map((v) => (
-                      <option key={v.id} value={v.label}>
-                        {v.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: "", label: "-- All variants --" },
+                      ...variants.map((v) => ({
+                        value: v.label,
+                        label: v.label
+                      }))
+                    ]}
+                  />
                 </div>
               )}
             </div>
           </div>
 
-          <div className="border border-[var(--dash-border)] p-4 rounded-lg bg-[var(--dash-surface-muted)]">
+          <div className="border border-[var(--dash-border)] p-4 rounded-lg bg-[var(--dash-surface-muted)] flex flex-col gap-4">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">Low Stock Alerts</h3>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -256,9 +265,49 @@ const InventoryModal = ({ action, record, onClose }) => {
               </label>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-[var(--dash-muted)] mb-1">
+                  Low Stock Threshold ({formData.unit || "units"})
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  disabled={!formData.alertEnabled}
+                  value={formData.reorderPoint}
+                  onChange={(e) =>
+                    setFormData({ ...formData, reorderPoint: e.target.value })
+                  }
+                  placeholder="e.g. 5"
+                  className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none disabled:opacity-50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-[var(--dash-muted)] mb-1">
+                  Reorder Quantity
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="any"
+                  disabled={!formData.alertEnabled}
+                  value={formData.reorderQuantity}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      reorderQuantity: e.target.value,
+                    })
+                  }
+                  placeholder="e.g. 20"
+                  className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none disabled:opacity-50"
+                />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm text-[var(--dash-muted)] mb-1">
-                Alert Threshold (%)
+                Fallback Alert Threshold (%)
               </label>
               <input
                 type="number"
@@ -272,7 +321,8 @@ const InventoryModal = ({ action, record, onClose }) => {
                 className="w-full bg-[var(--dash-surface)] border border-[var(--dash-border)] p-3 rounded-lg focus:outline-none disabled:opacity-50"
               />
               <p className="text-xs text-[var(--dash-muted)] mt-2">
-                Get a warning when stock falls below this percentage.
+                If a low stock number is set, alerts use that exact stock level.
+                Otherwise, alerts use this percentage of total capacity.
               </p>
             </div>
           </div>

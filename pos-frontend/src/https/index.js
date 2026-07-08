@@ -53,6 +53,8 @@ export const registerRestaurant = (data) =>
 export const getStaff = () => axiosWrapper.get("/api/restaurant/staff");
 export const inviteStaff = (data) =>
   axiosWrapper.post("/api/restaurant/staff/invite", data);
+export const resetStaffPassword = (userId) =>
+  axiosWrapper.post(`/api/restaurant/staff/${userId}/reset-password`, {});
 export const removeStaff = (userId) =>
   axiosWrapper.delete(`/api/restaurant/staff/${userId}`);
 

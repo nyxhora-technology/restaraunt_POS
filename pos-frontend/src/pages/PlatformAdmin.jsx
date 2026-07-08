@@ -19,6 +19,7 @@ import { FaArrowRight, FaRegCalendarAlt } from "react-icons/fa";
 import RestaurantDetailsModal from "../components/admin/RestaurantDetailsModal";
 import { formatDateAndTime } from "../utils";
 import Header from "../components/shared/Header";
+import CustomSelect from "../components/shared/CustomSelect";
 import useDashboardPreferences from "../hooks/useDashboardPreferences";
 
 const statusStyles = {
@@ -229,16 +230,19 @@ const PlatformAdmin = () => {
                 {restaurantsQuery.data?.data.pagination?.total || 0}
               </p>
             </div>
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              className="rounded-lg border border-[var(--dash-border)] bg-[var(--dash-surface)] px-4 py-2.5 text-[var(--dash-text)] outline-none focus:border-[var(--dash-primary)] transition-colors cursor-pointer shadow-sm"
-            >
-              <option value="">All statuses</option>
-              {["PENDING", "APPROVED", "REJECTED", "SUSPENDED"].map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
+            <div className="w-48">
+              <CustomSelect
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                options={[
+                  { value: "", label: "All statuses" },
+                  ...["PENDING", "APPROVED", "REJECTED", "SUSPENDED"].map((item) => ({
+                    value: item,
+                    label: item,
+                  }))
+                ]}
+              />
+            </div>
           </div>
 
           {restaurantsQuery.isLoading ? (
@@ -289,19 +293,20 @@ const PlatformAdmin = () => {
                         {restaurant.plan || "STARTER"}
                       </p>
                     </div>
-                    <select
-                      value={restaurant.plan || "STARTER"}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        planMutation.mutate({ restaurantId: restaurant.id, plan: e.target.value });
-                      }}
-                      className="rounded-lg border border-[var(--dash-border)] bg-[var(--dash-surface)] px-3 py-1.5 text-xs text-[var(--dash-text)] outline-none cursor-pointer hover:border-[var(--dash-primary)] transition-colors shadow-sm"
-                      aria-label={`Change plan for ${restaurant.name}`}
-                    >
-                      <option value="STARTER">Starter (Free)</option>
-                      <option value="PROFESSIONAL">Professional (₹2,499/mo)</option>
-                      <option value="ENTERPRISE">Enterprise</option>
-                    </select>
+                    <div className="w-36">
+                      <CustomSelect
+                        value={restaurant.plan || "STARTER"}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          planMutation.mutate({ restaurantId: restaurant.id, plan: e.target.value });
+                        }}
+                        options={[
+                          { value: "STARTER", label: "Starter (Free)" },
+                          { value: "PROFESSIONAL", label: "Professional (₹2,499/mo)" },
+                          { value: "ENTERPRISE", label: "Enterprise" }
+                        ]}
+                      />
+                    </div>
                   </div>
 
                   <div className="mt-3 rounded-lg bg-[var(--dash-surface-muted)] p-3.5 border border-[var(--dash-border)]">

@@ -14,6 +14,7 @@ import OrderDetailsModal from "../orders/OrderDetailsModal";
 import OrderCelebration from "../shared/OrderCelebration";
 import { getOrders } from "../../https/index";
 import { getOrderTableLabel } from "../tables/tableOptions";
+import CustomSelect from "../shared/CustomSelect";
 
 const inProgressStatuses = ["PENDING", "ACCEPTED", "PREPARING"];
 
@@ -135,30 +136,34 @@ const RecentOrders = ({ search = "" }) => {
               placeholder="Search by customer, order ID, or table..."
             />
           </label>
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-            aria-label="Filter recent orders by status"
-          >
-            <option value="all">All statuses</option>
-            <option value="progress">In progress</option>
-            <option value="READY">Ready</option>
-            <option value="COMPLETED">Completed</option>
-          </select>
-          <select
-            value={limit}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setLimit(val);
-              localStorage.setItem("dashboard_order_limit", val);
-            }}
-            aria-label="Number of orders to show"
-          >
-            <option value={10}>10 Orders</option>
-            <option value={20}>20 Orders</option>
-            <option value={50}>50 Orders</option>
-            <option value={100}>100 Orders</option>
-          </select>
+          <div className="w-36">
+            <CustomSelect
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              options={[
+                { value: "all", label: "All statuses" },
+                { value: "progress", label: "In progress" },
+                { value: "READY", label: "Ready" },
+                { value: "COMPLETED", label: "Completed" },
+              ]}
+            />
+          </div>
+          <div className="w-32">
+            <CustomSelect
+              value={limit}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setLimit(val);
+                localStorage.setItem("dashboard_order_limit", val);
+              }}
+              options={[
+                { value: 10, label: "10 Orders" },
+                { value: 20, label: "20 Orders" },
+                { value: 50, label: "50 Orders" },
+                { value: 100, label: "100 Orders" },
+              ]}
+            />
+          </div>
         </div>
       </div>
 
