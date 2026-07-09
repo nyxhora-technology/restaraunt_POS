@@ -1,5 +1,6 @@
 const prisma = require("../config/prisma");
 const createHttpError = require("http-errors");
+const { getStartOfDay, getStartOfMonth, getStartOfYesterday, dayjs } = require("../utils/dateUtils");
 const { getIo } = require("../config/socket");
 const { writeAudit } = require("../utils/audit");
 const {
@@ -390,10 +391,10 @@ const getKitchenOrders = async (req, res, next) => {
 
 const getDashboard = async (req, res, next) => {
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const yesterdayStart = new Date(todayStart);
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const tz = req.restaurant?.timezone || "Asia/Kolkata";
+    const todayStart = getStartOfDay(tz);
+    const yesterdayStart = getStartOfYesterday(tz);
+    const sevenDaysAgo = dayjs.tz(new Date(), tz).subtract(6, "day").startOf("day").toDate();
     const restaurantId = req.restaurantId;
 
     const [
@@ -410,6 +411,8 @@ const getDashboard = async (req, res, next) => {
       revenueToday,
       revenueYesterday,
       popularDishGroups,
+      recentOrdersList,
+      recentPaymentsList,
     ] = await prisma.$transaction([
       prisma.order.count({
         where: { restaurantId, createdAt: { gte: todayStart } },
@@ -478,6 +481,14 @@ const getDashboard = async (req, res, next) => {
         orderBy: { _sum: { quantity: "desc" } },
         take: 7,
       }),
+      prisma.order.findMany({
+        where: { restaurantId, createdAt: { gte: sevenDaysAgo } },
+        select: { createdAt: true },
+      }),
+      prisma.payment.findMany({
+        where: { restaurantId, createdAt: { gte: sevenDaysAgo } },
+        select: { createdAt: true, amount: true },
+      }),
     ]);
 
     const popularMenuItems = popularDishGroups.length
@@ -497,6 +508,36 @@ const getDashboard = async (req, res, next) => {
     );
     const todayRevenue = Number(revenueToday._sum.amount || 0);
     const yesterdayRevenue = Number(revenueYesterday._sum.amount || 0);
+
+    const sparklines = {
+      revenue: Array(7).fill(0),
+      orders: Array(7).fill(0),
+      labels: Array(7).fill(""),
+    };
+
+    const currentDayjs = dayjs.tz(new Date(), tz).startOf("day");
+    for (let i = 0; i < 7; i++) {
+      const d = currentDayjs.subtract(6 - i, "day");
+      sparklines.labels[i] = d.format("MMM D");
+    }
+
+    recentOrdersList.forEach((order) => {
+      const orderDay = dayjs.tz(order.createdAt, tz).startOf("day");
+      const diff = currentDayjs.diff(orderDay, "day");
+      const index = 6 - diff;
+      if (index >= 0 && index < 7) {
+        sparklines.orders[index] += 1;
+      }
+    });
+
+    recentPaymentsList.forEach((payment) => {
+      const paymentDay = dayjs.tz(payment.createdAt, tz).startOf("day");
+      const diff = currentDayjs.diff(paymentDay, "day");
+      const index = 6 - diff;
+      if (index >= 0 && index < 7) {
+        sparklines.revenue[index] += Number(payment.amount || 0);
+      }
+    });
 
     res.json({
       success: true,
@@ -518,6 +559,7 @@ const getDashboard = async (req, res, next) => {
         preparing,
         ready,
         unpaidOrders,
+        sparklines,
         completed: completedToday,
         popularDishes: popularDishGroups.map((dish) => ({
           id: dish.menuItemId,
@@ -825,9 +867,10 @@ const getOrderUsage = async (req, res, next) => {
     const restaurantId = req.restaurant?.id;
     const plan = req.restaurant?.plan || "STARTER";
 
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const tz = req.restaurant?.timezone || "Asia/Kolkata";
+    const now = dayjs().tz(tz);
+    const startOfMonth = getStartOfMonth(tz);
+    const endOfMonth = now.endOf("month").toDate();
 
     const [ordersThisMonth, menuItems, tables, staffSeats] = await prisma.$transaction([
       prisma.order.count({

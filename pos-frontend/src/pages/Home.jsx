@@ -27,6 +27,7 @@ import GlobalSearch from "../components/home/GlobalSearch";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import PopularDishes from "../components/home/PopularDishes";
+import MetricModal from "../components/home/MetricModal";
 import SetupChecklist from "../components/home/SetupChecklist";
 import PlanUsageBar from "../components/home/PlanUsageBar";
 import InventorySignalCard from "../components/home/InventorySignalCard";
@@ -49,6 +50,7 @@ const Home = () => {
   const [isCreateOrderOpen, setIsCreateOrderOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [errorDismissed, setErrorDismissed] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState(null);
   const currency = useCurrency();
   const {
     theme,
@@ -83,6 +85,16 @@ const Home = () => {
     dashboard.ordersYesterday,
   );
   const inProgress = (dashboard.pending || 0) + (dashboard.preparing || 0);
+
+  const revenueSparklineData = dashboard.sparklines?.revenue?.map((val, i) => ({
+    name: dashboard.sparklines.labels[i] || "",
+    value: val,
+  })) || [];
+
+  const ordersSparklineData = dashboard.sparklines?.orders?.map((val, i) => ({
+    name: dashboard.sparklines.labels[i] || "",
+    value: val,
+  })) || [];
 
   // ── Live clock — isolated in state so only this re-renders, not the whole page
   const [now, setNow] = useState(new Date());
@@ -121,13 +133,6 @@ const Home = () => {
   // ── Role-aware quick actions ──────────────────────────────────────────
   const allQuickActions = [
     {
-      label: "New Order",
-      description: "Take a new order",
-      icon: MdOutlineRoomService,
-      action: () => setIsCreateOrderOpen(true),
-      roles: ["OWNER", "MANAGER", "CASHIER", "WAITER"],
-    },
-    {
       label: "Manage Tables",
       description: "View table layout",
       icon: MdTableRestaurant,
@@ -158,11 +163,10 @@ const Home = () => {
   ];
   const quickActions = allQuickActions.filter((a) => a.roles.includes(user.role));
 
-  // ── "At a Glance" — genuinely different from MiniCards above
-  // MiniCards show: Earnings, In-Progress count, Orders Today, AOV
   // Glance shows: Available tables, Unpaid orders, Completed today, Table occupancy
+  const unavailableTables = Math.max(0, (dashboard.totalTables || 0) - (dashboard.availableTables || 0));
   const occupancyPct = dashboard.totalTables
-    ? Math.round(((dashboard.activeTables || 0) / dashboard.totalTables) * 100)
+    ? Math.round((unavailableTables / dashboard.totalTables) * 100)
     : 0;
 
   const glanceItems = [
@@ -170,7 +174,7 @@ const Home = () => {
       label: "Tables Available",
       value: dashboard.availableTables ?? "—",
       icon: MdTableRestaurant,
-      sub: `${dashboard.activeTables || 0} occupied`,
+      sub: `${unavailableTables} currently in use`,
     },
     {
       label: "Unpaid Orders",
@@ -232,8 +236,9 @@ const Home = () => {
             <header className="analytics-header dashboard-overview-header">
               <div>
                 <p className="analytics-eyebrow">Live operations</p>
-                <h1>
-                  {greeting}, {user.name?.split(" ")[0] || "there"}! <span><MdWavingHand /></span>
+                <h1 style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span>{greeting}, {user.name?.split(" ")[0] || "there"}!</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', color: '#ffb74d' }}><MdWavingHand /></span>
                 </h1>
                 <p>
                   {dashboard.restaurantName ||
@@ -258,15 +263,9 @@ const Home = () => {
                     day: "numeric",
                     hour: "numeric",
                     minute: "2-digit",
+                    timeZone: user.restaurant?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
                   }).format(now)}
                 </time>
-                <button
-                  type="button"
-                  className="dashboard-header-primary"
-                  onClick={() => setIsCreateOrderOpen(true)}
-                >
-                  <MdOutlineRoomService /> New order
-                </button>
               </div>
             </header>
 
@@ -296,8 +295,10 @@ const Home = () => {
                 number={currency.format(dashboard.revenueToday || 0)}
                 trend={isLoading ? undefined : revenueDelta}
                 footer="vs yesterday"
-                tone="teal"
+                tone="neutral"
                 isLoading={isLoading}
+                data={dashboard.sparklines?.revenue || []}
+                onClick={() => setSelectedMetric("revenue")}
               />
               <MiniCard
                 title="In Progress"
@@ -314,8 +315,10 @@ const Home = () => {
                 number={dashboard.ordersToday || 0}
                 trend={isLoading ? undefined : ordersDelta}
                 footer="vs yesterday"
-                tone="blue"
+                tone="neutral"
                 isLoading={isLoading}
+                data={dashboard.sparklines?.orders || []}
+                onClick={() => setSelectedMetric("orders")}
               />
               <MiniCard
                 title="Average Order Value"
@@ -323,7 +326,7 @@ const Home = () => {
                 prefix={currency.symbol}
                 number={currency.format(dashboard.averageOrderValue || 0)}
                 footer="based on today's payments"
-                tone="red"
+                tone="neutral"
                 isLoading={isLoading}
                 hideTrend
               />
@@ -331,7 +334,7 @@ const Home = () => {
 
             <section className="dashboard-command-grid">
               <div className="dashboard-command-main">
-                {!isLoading && !isError && (dashboard.ordersToday || 0) === 0 && (
+                {!isLoading && !isError && (dashboard.ordersToday || 0) === 0 && (dashboard.activeTables || 0) === 0 && (dashboard.unpaidOrders || 0) === 0 && (
                   <div className="dashboard-first-order-callout">
                     <span className="dashboard-zero-icon">
                       <MdOutlineRoomService />
@@ -439,6 +442,14 @@ const Home = () => {
           )}
         </div>
       </div>
+
+      <MetricModal
+        isOpen={selectedMetric !== null}
+        onClose={() => setSelectedMetric(null)}
+        title={selectedMetric === "revenue" ? "Total Earnings" : "Orders"}
+        data={selectedMetric === "revenue" ? revenueSparklineData : ordersSparklineData}
+        valuePrefix={selectedMetric === "revenue" ? currency.symbol : ""}
+      />
 
       <CreateOrderModal
         isOpen={isCreateOrderOpen}

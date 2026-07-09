@@ -23,6 +23,7 @@ import {
   MdContentCopy,
   MdShare,
   MdOpenInNew,
+  MdOutlineAccessTime,
 } from "react-icons/md";
 import {
   changePassword,
@@ -33,6 +34,7 @@ import {
 import { setRestaurant } from "../redux/slices/userSlice";
 import useDashboardPreferences from "../hooks/useDashboardPreferences";
 import useRole from "../hooks/useRole";
+import CustomSelect from "../components/shared/CustomSelect";
 
 const CURRENCIES = [
   {
@@ -131,6 +133,7 @@ const Settings = () => {
     description: user.restaurant?.description || "",
     logo: user.restaurant?.logo || "",
     currency: user.restaurant?.currency || "INR",
+    timezone: user.restaurant?.timezone || "Asia/Kolkata",
   });
 
   // Sync form when redux restaurant updates (e.g. after save)
@@ -145,6 +148,7 @@ const Settings = () => {
         description: user.restaurant.description || "",
         logo: user.restaurant.logo || "",
         currency: user.restaurant.currency || "INR",
+        timezone: user.restaurant.timezone || "Asia/Kolkata",
       });
     }
   }, [user.restaurant]);
@@ -537,6 +541,37 @@ const Settings = () => {
                     {selectedCurrency.code} ({selectedCurrency.symbol})
                   </strong>
                   . Affects all revenue displays across the dashboard.
+                </p>
+              </div>
+
+              <div className="settings-field-group">
+                <span className="settings-field-label">
+                  <MdOutlineAccessTime
+                    style={{
+                      display: "inline",
+                      marginRight: 5,
+                      verticalAlign: "middle",
+                    }}
+                  />
+                  Operating Timezone
+                </span>
+                <div className="settings-field-wrap" style={{ overflow: "visible" }}>
+                  <FieldIcon icon={MdOutlineAccessTime} />
+                  <CustomSelect
+                    value={restaurant.timezone}
+                    onChange={(e) => setRestaurantForm({ ...restaurant, timezone: e.target.value })}
+                    name="timezone"
+                    buttonClassName="settings-field-input cursor-pointer flex items-center justify-between w-full"
+                    searchable={true}
+                    options={(() => {
+                      const tzs = Intl.supportedValuesOf ? Intl.supportedValuesOf('timeZone') : ["UTC", "Asia/Kolkata", "America/New_York", "Europe/London"];
+                      if (!tzs.includes("Asia/Kolkata")) tzs.push("Asia/Kolkata");
+                      return tzs.sort().map(tz => ({ label: tz, value: tz }));
+                    })()}
+                  />
+                </div>
+                <p className="settings-currency-hint">
+                  Affects the "Today's Orders" reset time and analytics boundaries.
                 </p>
               </div>
 

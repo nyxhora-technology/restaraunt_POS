@@ -31,7 +31,8 @@ export const formatDate = (date) => {
   return `${months[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
 };
 
-export const formatDateAndTime = (date) => {
+export const formatDateAndTime = (date, tz) => {
+  const timeZone = tz || Intl.DateTimeFormat().resolvedOptions().timeZone;
   const dateAndTime = new Date(date).toLocaleString("en-US", {
     month: "long",
     day: "2-digit",
@@ -40,7 +41,7 @@ export const formatDateAndTime = (date) => {
     minute: "2-digit",
     second: "2-digit",
     hour12: true,
-    timeZone: "Asia/Kolkata"
+    timeZone: timeZone
   })
 
   return dateAndTime;

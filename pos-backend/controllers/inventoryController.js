@@ -1,4 +1,5 @@
 const prisma = require("../config/prisma");
+const { isExpired, daysUntilExpiry } = require("../utils/dateUtils");
 const createHttpError = require("http-errors");
 const { writeAudit } = require("../utils/audit");
 const { getIo } = require("../config/socket");
@@ -8,7 +9,7 @@ const emitInventory = (restaurantId) => {
 };
 
 const getStockPercent = (item) =>
-  item.totalStock > 0 ? Math.round((item.currentStock / item.totalStock) * 100) : 0;
+  item.totalStock > 0 ? Math.min(100, Math.round((item.currentStock / item.totalStock) * 100)) : 0;
 
 const getLowStockStatus = (item) => {
   if (!item.alertEnabled) {
@@ -114,6 +115,7 @@ const listItems = async (req, res, next) => {
         supplierRef: { select: { id: true, name: true } },
       },
     });
+    const tz = req.restaurant?.timezone || "Asia/Kolkata";
     const enriched = items.map((item) => {
       const lowStockStatus = getLowStockStatus(item);
       return {
@@ -121,10 +123,8 @@ const listItems = async (req, res, next) => {
         ...lowStockStatus,
         stockPercent: getStockPercent(item),
         needsReorder: item.reorderPoint != null && item.currentStock <= item.reorderPoint,
-        isExpired: item.expiryDate ? new Date(item.expiryDate) < new Date() : false,
-        daysUntilExpiry: item.expiryDate
-          ? Math.ceil((new Date(item.expiryDate) - new Date()) / (1000 * 60 * 60 * 24))
-          : null,
+        isExpired: item.expiryDate ? isExpired(item.expiryDate, tz) : false,
+        daysUntilExpiry: item.expiryDate ? daysUntilExpiry(item.expiryDate, tz) : null,
       };
     });
     res.json({ success: true, data: enriched });
@@ -404,12 +404,16 @@ const getAnalytics = async (req, res, next) => {
     const lowStockItems = items.filter((i) => i.reorderPoint != null && i.currentStock <= i.reorderPoint);
 
     // Expiring within 7 days
-    const sevenDaysFromNow = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const tz = req.restaurant?.timezone || "Asia/Kolkata";
     const expiringItems = items
-      .filter((i) => i.expiryDate && new Date(i.expiryDate) <= sevenDaysFromNow)
+      .filter((i) => {
+        if (!i.expiryDate) return false;
+        const days = daysUntilExpiry(i.expiryDate, tz);
+        return days <= 7 && days >= 0;
+      })
       .map((i) => ({
         ...i,
-        daysUntilExpiry: Math.ceil((new Date(i.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)),
+        daysUntilExpiry: daysUntilExpiry(i.expiryDate, tz),
       }))
       .sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
 

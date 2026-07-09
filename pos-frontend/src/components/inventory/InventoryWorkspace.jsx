@@ -52,14 +52,23 @@ const AddEditItemModal = ({ record, onClose, suppliers }) => {
 
   const set = (k, v) => setFormData((p) => ({ ...p, [k]: v }));
 
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handleSuccess = (msg) => {
+    queryClient.invalidateQueries({ queryKey: ["inventory"] });
+    enqueueSnackbar(msg, { variant: "success" });
+    setShowSuccess(true);
+    setTimeout(() => onClose(), 600);
+  };
+
   const addMut = useMutation({
     mutationFn: createInventoryItem,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["inventory"] }); enqueueSnackbar("Item added!", { variant: "success" }); onClose(); },
+    onSuccess: () => handleSuccess("Item added!"),
     onError: (e) => enqueueSnackbar(getErrorMessage(e), { variant: "error" }),
   });
   const editMut = useMutation({
     mutationFn: updateInventoryItem,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["inventory"] }); enqueueSnackbar("Item updated!", { variant: "success" }); onClose(); },
+    onSuccess: () => handleSuccess("Item updated!"),
     onError: (e) => enqueueSnackbar(getErrorMessage(e), { variant: "error" }),
   });
 
@@ -152,8 +161,8 @@ const AddEditItemModal = ({ record, onClose, suppliers }) => {
 
         <div className="col-span-2 flex gap-3 pt-2">
           <button type="button" onClick={onClose} className="dashboard-secondary-button flex-1 py-2.5 rounded-lg text-sm">Cancel</button>
-          <button type="submit" disabled={isPending} className="dashboard-primary-button flex-1 py-2.5 rounded-lg text-sm font-bold disabled:opacity-60">
-            {isPending ? "Saving…" : "Save Item"}
+          <button type="submit" disabled={isPending || showSuccess} className="dashboard-primary-button flex-1 py-2.5 rounded-lg text-sm font-bold disabled:opacity-60 transition-all duration-300">
+            {showSuccess ? "✅ Saved!" : isPending ? "Saving…" : "Save Item"}
           </button>
         </div>
       </form>
@@ -186,9 +195,16 @@ const RestockModal = ({ item, onClose }) => {
 
 const AdjustModal = ({ item, onClose }) => {
   const queryClient = useQueryClient();
+  const [showSuccess, setShowSuccess] = useState(false);
+
   const mut = useMutation({
     mutationFn: adjustInventoryItem,
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["inventory"] }); enqueueSnackbar("Stock adjusted!", { variant: "success" }); onClose(); },
+    onSuccess: () => { 
+      queryClient.invalidateQueries({ queryKey: ["inventory"] }); 
+      enqueueSnackbar("Stock adjusted!", { variant: "success" }); 
+      setShowSuccess(true);
+      setTimeout(() => onClose(), 600);
+    },
     onError: (e) => enqueueSnackbar(getErrorMessage(e), { variant: "error" }),
   });
 
@@ -219,7 +235,9 @@ const AdjustModal = ({ item, onClose }) => {
         <div className="mt-3"><Field label="Note"><Input name="note" placeholder="Reason for adjustment" /></Field></div>
         <div className="flex gap-3 mt-5">
           <button type="button" onClick={onClose} className="dashboard-secondary-button flex-1 py-2.5 rounded-lg text-sm">Cancel</button>
-          <button type="submit" disabled={mut.isPending} className="dashboard-primary-button flex-1 py-2.5 rounded-lg text-sm font-bold disabled:opacity-60">{mut.isPending ? "Saving…" : "Apply"}</button>
+          <button type="submit" disabled={mut.isPending || showSuccess} className="dashboard-primary-button flex-1 py-2.5 rounded-lg text-sm font-bold disabled:opacity-60 transition-all duration-300">
+            {showSuccess ? "✅ Applied!" : mut.isPending ? "Saving…" : "Apply"}
+          </button>
         </div>
       </form>
     </Modal>
@@ -233,7 +251,7 @@ const ItemCard = ({ item, onRestock, onAdjust, onEdit, onDelete }) => {
   const textColor = isCritical ? "text-red-400" : isWarning ? "text-yellow-400" : "text-green-400";
 
   return (
-    <div className="dashboard-inventory-card p-4 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-surface)] hover:border-[var(--dash-primary)] transition-all duration-200">
+    <div className="group dashboard-inventory-card p-4 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-surface)] hover:border-[var(--dash-primary)] transition-all duration-200">
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -245,11 +263,22 @@ const ItemCard = ({ item, onRestock, onAdjust, onEdit, onDelete }) => {
           {item.supplierRef && <p className="text-xs text-[var(--dash-muted)]">🏭 {item.supplierRef.name}</p>}
           {item.menuItem && <p className="text-xs text-[var(--dash-muted)]">📦 {item.menuItem.name}{item.menuItem.category ? ` · ${item.menuItem.category.name}` : ""}</p>}
         </div>
-        <div className="flex gap-1 ml-2 shrink-0">
-          <button onClick={() => onRestock(item)} title="Restock" className="dashboard-text-button p-1.5 rounded text-xs"><Icon.Refresh /></button>
-          <button onClick={() => onAdjust(item)} title="Adjust" className="dashboard-secondary-button p-1.5 rounded text-xs">±</button>
-          <button onClick={() => onEdit(item)} title="Edit" className="dashboard-secondary-button p-1.5 rounded"><Icon.Edit /></button>
-          <button onClick={() => onDelete(item.id)} title="Delete" className="dashboard-danger-button p-1.5 rounded"><Icon.Trash /></button>
+        <div className="flex items-center gap-0.5 ml-2 shrink-0 bg-[var(--dash-surface-muted)] rounded-lg p-1 border border-[var(--dash-border)] shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <button onClick={() => onRestock(item)} title="Restock" className="p-1.5 rounded-md text-[var(--dash-muted)] hover:text-[var(--dash-text)] hover:bg-[var(--dash-surface)] transition-all flex items-center justify-center w-8 h-8 group relative">
+            <Icon.Refresh />
+          </button>
+          <div className="w-px h-4 bg-[var(--dash-border)] mx-0.5"></div>
+          <button onClick={() => onAdjust(item)} title="Adjust" className="p-1.5 rounded-md text-[var(--dash-muted)] hover:text-[var(--dash-text)] hover:bg-[var(--dash-surface)] transition-all font-bold text-sm leading-none flex items-center justify-center w-8 h-8 group relative">
+            ±
+          </button>
+          <div className="w-px h-4 bg-[var(--dash-border)] mx-0.5"></div>
+          <button onClick={() => onEdit(item)} title="Edit" className="p-1.5 rounded-md text-[var(--dash-muted)] hover:text-[var(--dash-text)] hover:bg-[var(--dash-surface)] transition-all flex items-center justify-center w-8 h-8 group relative">
+            <Icon.Edit />
+          </button>
+          <div className="w-px h-4 bg-[var(--dash-border)] mx-0.5"></div>
+          <button onClick={() => onDelete(item.id)} title="Delete" className="p-1.5 rounded-md text-red-400/70 hover:text-white hover:bg-red-500 transition-all flex items-center justify-center w-8 h-8 group relative">
+            <Icon.Trash />
+          </button>
         </div>
       </div>
 
@@ -320,29 +349,35 @@ const ItemsTab = ({ suppliers }) => {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <div className="relative flex-1 min-w-[180px]">
+      <div className="flex flex-col md:flex-row gap-3 mb-5 w-full">
+        <div className="relative flex-1 min-w-[200px]">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--dash-muted)]"><Icon.Search /></span>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items…" className="w-full pl-9 pr-3 py-2 bg-[var(--dash-surface-muted)] border border-[var(--dash-border)] text-[var(--dash-text)] rounded-lg text-sm focus:outline-none" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search items…" className="w-full pl-9 pr-3 py-2.5 bg-[var(--dash-surface-muted)] border border-[var(--dash-border)] text-[var(--dash-text)] rounded-lg text-sm focus:outline-none focus:border-[var(--dash-primary)] transition-colors" />
         </div>
-        <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-auto min-w-[130px]">
-          <option value="all">All Status</option>
-          <option value="ok">✅ OK</option>
-          <option value="low">🟡 Low Stock</option>
-          <option value="critical">🔴 Critical</option>
-          <option value="out">⛔ Out of Stock</option>
-          <option value="reorder">🔁 Needs Reorder</option>
-          <option value="expiring">🟠 Expiring Soon</option>
-        </Select>
-        {categories.length > 0 && (
-          <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-auto min-w-[130px]">
-            <option value="all">All Categories</option>
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </Select>
-        )}
-        <button onClick={() => setModal({ action: "add" })} className="dashboard-primary-button px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-1.5">
-          <Icon.Plus /> Add Item
-        </button>
+        <div className="flex flex-wrap md:flex-nowrap gap-3 w-full md:w-auto">
+          <div className="w-full md:w-48 shrink-0">
+            <Select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+              <option value="all">All Status</option>
+              <option value="ok">✅ OK</option>
+              <option value="low">🟡 Low Stock</option>
+              <option value="critical">🔴 Critical</option>
+              <option value="out">⛔ Out of Stock</option>
+              <option value="reorder">🔁 Needs Reorder</option>
+              <option value="expiring">🟠 Expiring Soon</option>
+            </Select>
+          </div>
+          {categories.length > 0 && (
+            <div className="w-full md:w-48 shrink-0">
+              <Select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                <option value="all">All Categories</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </Select>
+            </div>
+          )}
+          <button onClick={() => setModal({ action: "add" })} className="dashboard-primary-button px-5 py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 shrink-0 w-full md:w-auto">
+            <Icon.Plus /> Add Item
+          </button>
+        </div>
       </div>
 
       {/* Grid */}

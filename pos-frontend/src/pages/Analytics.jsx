@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { MdArrowForward, MdInsights, MdLockOutline } from "react-icons/md";
 import { getAnalytics } from "../https";
 import useFeature from "../hooks/useFeature";
+import Tooltip from "../components/shared/Tooltip";
 
 const COLORS = ["#18b979", "#5b8def", "#f6a723", "#a878e8", "#ef6b67"];
 const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -127,10 +128,10 @@ const Analytics = () => {
           </div>
           <div className="analytics-bars">
             {revenue.map((item) => (
-              <div key={item.date} title={`${item.date}: ${money.format(item.amount)}`}>
+              <Tooltip key={item.date} className="analytics-bar-col" content={`${item.date}: ${money.format(item.amount)}`} position="top">
                 <span style={{ height: `${Math.max(3, (item.amount / maxRevenue) * 100)}%` }} />
                 <small>{new Date(`${item.date}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: days > 30 ? undefined : "short" })}</small>
-              </div>
+              </Tooltip>
             ))}
           </div>
         </article>
@@ -162,11 +163,9 @@ const Analytics = () => {
               <div className="analytics-heat-row" key={day}>
                 <b>{dayLabels[day]}</b>
                 {row.map((count, hour) => (
-                  <i
-                    key={hour}
-                    title={`${dayLabels[day]} ${hour}:00 — ${count} orders`}
-                    style={{ opacity: count ? 0.18 + (count / heatMax) * 0.82 : 0.06 }}
-                  />
+                  <Tooltip key={hour} className="analytics-heat-col" content={`${dayLabels[day]} ${hour}:00 — ${count} orders`} position="top">
+                    <i style={{ opacity: count ? 0.18 + (count / heatMax) * 0.82 : 0.06 }} />
+                  </Tooltip>
                 ))}
               </div>
             ))}

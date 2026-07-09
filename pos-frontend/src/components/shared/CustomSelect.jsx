@@ -8,13 +8,17 @@ const CustomSelect = ({
   options = [],
   placeholder = "Select...",
   className = "",
+  buttonClassName = "",
   name,
   disabled = false,
   required = false,
+  searchable = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [internalValue, setInternalValue] = useState(defaultValue || "");
+  const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef(null);
+  const searchInputRef = useRef(null);
 
   const value = propValue !== undefined ? propValue : internalValue;
 
@@ -26,11 +30,16 @@ const CustomSelect = ({
     };
     if (isOpen) {
       document.addEventListener("mousedown", handleOutsideClick);
+      if (searchable && searchInputRef.current) {
+        setTimeout(() => searchInputRef.current.focus(), 50);
+      }
+    } else {
+      setSearchQuery("");
     }
     return () => {
       document.removeEventListener("mousedown", handleOutsideClick);
     };
-  }, [isOpen]);
+  }, [isOpen, searchable]);
 
   const handleSelect = (option) => {
     if (propValue === undefined) {
@@ -47,19 +56,22 @@ const CustomSelect = ({
   };
 
   const selectedOption = options.find((opt) => String(opt.value) === String(value));
-
-  // The wrapper takes the layout classes from className, but we don't want to pass bg/border classes to the wrapper.
-  // Actually, standardizing on className replacing the container's or the button's classes?
-  // Let's apply custom margins/widths to the wrapper, and standard styles to the button.
-  // We'll extract width/margin classes for the wrapper if needed, but it's simpler to just let the button expand to full width of wrapper.
+  
+  const filteredOptions = searchable 
+    ? options.filter(opt => opt.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    : options;
 
   return (
-    <div className={`relative w-full ${className}`} ref={containerRef}>
+    <div 
+      className={`relative w-full ${className}`} 
+      ref={containerRef}
+      style={{ zIndex: isOpen ? 50 : 1 }}
+    >
       <button
         type="button"
         disabled={disabled}
         onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between bg-[var(--dash-surface-muted)] border border-[var(--dash-border)] text-[var(--dash-text)] p-2.5 rounded-lg focus:outline-none focus:border-[var(--dash-primary)] transition-colors text-sm ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+        className={buttonClassName || `w-full flex items-center justify-between bg-[var(--dash-surface-muted)] border border-[var(--dash-border)] text-[var(--dash-text)] p-2.5 rounded-lg focus:outline-none focus:border-[var(--dash-primary)] transition-colors text-sm ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
       >
         <span className={selectedOption ? "truncate" : "text-[var(--dash-muted)] truncate"}>
           {selectedOption ? selectedOption.label : placeholder}
@@ -85,29 +97,47 @@ const CustomSelect = ({
       )}
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-[var(--dash-surface)] border border-[var(--dash-border)] rounded-lg shadow-lg max-h-60 overflow-auto">
-          {options.length === 0 ? (
-            <div className="p-3 text-sm text-[var(--dash-muted)] text-center">
-              No options available
+        <div className="absolute z-50 w-full mt-1 bg-[var(--dash-surface)] border border-[var(--dash-border)] rounded-lg shadow-lg max-h-60 flex flex-col overflow-hidden">
+          {searchable && (
+            <div className="p-2 border-b border-[var(--dash-border)] shrink-0">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full bg-[var(--dash-surface-muted)] text-[var(--dash-text)] text-sm px-3 py-1.5 rounded border border-[var(--dash-border)] focus:outline-none focus:border-[var(--dash-primary)]"
+              />
             </div>
-          ) : (
-            <ul className="py-1 m-0 list-none">
-              {options.map((option) => (
-                <li
-                  key={option.value}
-                  onClick={() => handleSelect(option)}
-                  className={`px-3 py-2 text-sm cursor-pointer hover:bg-[var(--dash-surface-muted)] transition-colors flex items-center justify-between ${
-                    String(value) === String(option.value)
-                      ? "bg-[var(--dash-primary)]/10 text-[var(--dash-primary)] font-medium"
-                      : "text-[var(--dash-text)]"
-                  }`}
-                >
-                  <span className="truncate pr-2">{option.label}</span>
-                  {String(value) === String(option.value) && <MdCheck className="shrink-0" size={16} />}
-                </li>
-              ))}
-            </ul>
           )}
+          
+          <div className="overflow-auto flex-1">
+            {filteredOptions.length === 0 ? (
+              <div className="p-3 text-sm text-[var(--dash-muted)] text-center">
+                No options available
+              </div>
+            ) : (
+              <ul className="py-1 m-0 list-none">
+                {filteredOptions.map((option) => (
+                  <li
+                    key={option.value}
+                    onClick={() => handleSelect(option)}
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-[var(--dash-surface-muted)] transition-colors flex items-center justify-between ${
+                      String(value) === String(option.value)
+                        ? "text-[var(--dash-primary)] font-medium bg-[var(--dash-primary-soft)]"
+                        : "text-[var(--dash-text)]"
+                    }`}
+                  >
+                    {option.label}
+                    {String(value) === String(option.value) && (
+                      <MdCheck className="text-[var(--dash-primary)] shrink-0" size={16} />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       )}
     </div>

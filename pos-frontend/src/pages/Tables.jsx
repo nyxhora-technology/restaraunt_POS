@@ -18,10 +18,12 @@ import ReservationsPanel from "../components/tables/ReservationsPanel";
 import {
   MdCalendarMonth,
   MdCheckCircleOutline,
+  MdDensityMedium,
   MdGroups,
   MdOutlineAccessTime,
   MdSearch,
   MdTableRestaurant,
+  MdViewHeadline,
 } from "react-icons/md";
 
 const statusFilters = [
@@ -41,6 +43,7 @@ const Tables = () => {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [view, setView] = useState("tables");
   const [showDemoted, setShowDemoted] = useState(false);
+  const [viewMode, setViewMode] = useState("comfortable");
   const dispatch = useDispatch();
   const location = useLocation();
   const navigate = useNavigate();
@@ -312,21 +315,6 @@ const Tables = () => {
         <ReservationsPanel tables={tables} />
       ) : (
         <>
-          <div
-            className="dashboard-table-status-legend"
-            aria-label="Table status colours"
-          >
-            <strong>Status colours</strong>
-            <div>
-              {statusFilters.slice(1).map(([value, label]) => (
-                <span key={value} className={TABLE_STATUS_TONES[value]}>
-                  <i />
-                  {label}
-                </span>
-              ))}
-            </div>
-          </div>
-
           <div className="dashboard-table-filter-panel">
             <div className="dashboard-table-filter-row">
               <span className="dashboard-filter-label">Status</span>
@@ -340,6 +328,9 @@ const Tables = () => {
                       status === value ? "is-active" : ""
                     }`}
                   >
+                    {value !== "ALL" && (
+                      <i className={`filter-dot ${TABLE_STATUS_TONES[value]}`} />
+                    )}
                     {label}
                     <span>
                       {value === "ALL"
@@ -385,9 +376,24 @@ const Tables = () => {
                 <strong>{visibleTables.length}</strong>{" "}
                 {visibleTables.length === 1 ? "table" : "tables"}
               </p>
-              {guests > 0 && (
-                <span>Select one table or combine matching tables.</span>
-              )}
+              <div className="view-toggle-group">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("comfortable")}
+                  className={`view-toggle-btn ${viewMode === "comfortable" ? "is-active" : ""}`}
+                  title="Comfortable view"
+                >
+                  <MdViewHeadline />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode("dense")}
+                  className={`view-toggle-btn ${viewMode === "dense" ? "is-active" : ""}`}
+                  title="Dense view"
+                >
+                  <MdDensityMedium />
+                </button>
+              </div>
             </div>
           </div>
 
@@ -426,7 +432,7 @@ const Tables = () => {
             </div>
           ) : (
             <>
-              <div className="dashboard-live-table-grid">
+              <div className={`dashboard-live-table-grid ${viewMode === "dense" ? "is-dense" : ""}`}>
                 {fittingTables.map((table) => (
                   <TableCard
                     key={table.id}
@@ -435,6 +441,7 @@ const Tables = () => {
                     disabled={Boolean(getDisabledReason(table))}
                     disabledReason={getDisabledReason(table)}
                     onToggle={toggleTable}
+                    dense={viewMode === "dense"}
                   />
                 ))}
               </div>
@@ -450,7 +457,7 @@ const Tables = () => {
                     {showDemoted ? "Hide" : "Show"} {demotedTables.length} table{demotedTables.length > 1 ? "s" : ""} too small for {guests} guests
                   </button>
                   {showDemoted && (
-                    <div className="dashboard-live-table-grid opacity-40 pointer-events-none select-none">
+                    <div className={`dashboard-live-table-grid opacity-40 pointer-events-none select-none ${viewMode === "dense" ? "is-dense" : ""}`}>
                       {demotedTables.map((table) => (
                         <TableCard
                           key={table.id}
@@ -459,6 +466,7 @@ const Tables = () => {
                           disabled
                           disabledReason={`Only ${table.seats} seat${table.seats !== 1 ? "s" : ""} — too small`}
                           onToggle={undefined}
+                          dense={viewMode === "dense"}
                         />
                       ))}
                     </div>

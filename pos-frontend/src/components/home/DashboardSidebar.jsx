@@ -1,21 +1,31 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import Tooltip from "../shared/Tooltip";
+import { MdOutlineReceiptLong, MdTableRestaurant } from "react-icons/md";
 import {
-  MdOutlineAdminPanelSettings,
-  MdOutlineDashboard,
-  MdInventory2,
-  MdOutlineMenuBook,
-  MdQrCode2,
-  MdOutlineReceiptLong,
-  MdOutlineRoomService,
-  MdOutlineSettings,
-  MdRestaurant,
-  MdTableRestaurant,
-  MdChevronLeft,
-  MdChevronRight,
-  MdInsights,
-  MdLockOutline,
-} from "react-icons/md";
+  LuLayoutDashboard,
+  LuChartLine,
+  LuBookOpen,
+  LuPackage,
+  LuQrCode,
+  LuShieldCheck,
+  LuSettings,
+  LuChevronLeft,
+  LuChevronRight,
+  LuLock,
+  LuSparkles,
+  LuChefHat,
+  LuUtensils,
+} from "react-icons/lu";
+
+const GlowingInventoryIcon = (props) => (
+  <div className="animated-inventory-icon-wrapper" style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    <LuPackage {...props} className="inventory-base-icon" />
+    <LuSparkles className="inventory-star inventory-star-1" />
+    <LuSparkles className="inventory-star inventory-star-2" />
+    <LuSparkles className="inventory-star inventory-star-3" />
+  </div>
+);
 import useRole from "../../hooks/useRole";
 import useFeature from "../../hooks/useFeature";
 import {
@@ -28,7 +38,7 @@ const navItems = [
   {
     label: "Analytics",
     path: "/app/analytics",
-    icon: MdInsights,
+    icon: LuChartLine,
     roles: MANAGER_ROLES,
     feature: "ANALYTICS_EXTENDED",
   },
@@ -47,31 +57,31 @@ const navItems = [
   {
     label: "Menu",
     path: "/app/menu",
-    icon: MdOutlineMenuBook,
+    icon: LuBookOpen,
     roles: ORDER_ROLES,
   },
   {
     label: "Inventory",
     path: "/app/inventory",
-    icon: MdInventory2,
+    icon: GlowingInventoryIcon,
     roles: MANAGER_ROLES,
   },
   {
     label: "QR Menu",
     path: "/app/qr",
-    icon: MdQrCode2,
+    icon: LuQrCode,
     roles: MANAGER_ROLES,
   },
   {
     label: "Admin Workspace",
     path: "/app/dashboard",
-    icon: MdOutlineAdminPanelSettings,
+    icon: LuShieldCheck,
     roles: MANAGER_ROLES,
   },
   {
     label: "Settings",
     path: "/app/settings",
-    icon: MdOutlineSettings,
+    icon: LuSettings,
     roles: TENANT_ROLES,
   },
 ];
@@ -92,74 +102,91 @@ const DashboardSidebar = ({
       label: "Dashboard",
       path: dashboardPath,
       aliases: isManagement ? [] : ["/"],
-      icon: MdOutlineDashboard,
+      icon: LuLayoutDashboard,
       roles: TENANT_ROLES,
     },
     ...navItems,
   ].filter((item) => item.roles.includes(role));
 
+  const wrapTooltip = (text, element) => {
+    if (!collapsed) return element;
+    return (
+      <Tooltip content={text} position="right" delay={0.1} className="dashboard-sidebar-tooltip">
+        {element}
+      </Tooltip>
+    );
+  };
+
   return (
-    <aside className={`dashboard-sidebar ${collapsed ? "is-collapsed" : ""}`}>
-      <button
-        type="button"
-        className="dashboard-brand"
-        onClick={() => navigate(dashboardPath)}
-        title={collapsed ? restaurantName : undefined}
-      >
-        <span className="dashboard-brand-mark">
-          <MdRestaurant />
-        </span>
-        {!collapsed && (
-          <span className="dashboard-brand-copy">
-            <strong>{restaurantName || "Restaurant"}</strong>
-            <small>Restaurant POS</small>
+    <aside
+      className={`dashboard-sidebar ${collapsed ? "is-collapsed" : ""}`}
+      aria-label="Sidebar navigation"
+    >
+      {wrapTooltip(
+        restaurantName,
+        <button
+          type="button"
+          onClick={() => navigate("/app")}
+          className={`dashboard-brand ${collapsed ? "is-collapsed" : ""}`}
+        >
+          <span className="dashboard-brand-mark">
+            <LuUtensils />
           </span>
-        )}
-      </button>
+          {!collapsed && (
+            <span className="dashboard-brand-copy">
+              <strong>{restaurantName}</strong>
+              <small>Restaurant POS</small>
+            </span>
+          )}
+        </button>
+      )}
 
       <nav className="dashboard-sidebar-nav" aria-label="Dashboard navigation">
         {visibleNavItems.map(({ label, path, aliases = [], icon: Icon, feature }) => {
           const active =
             location.pathname === path || aliases.includes(location.pathname);
           const locked = feature && !hasFeature(feature);
-          return (
+          return wrapTooltip(
+            label,
             <button
               type="button"
               key={path}
               onClick={() => navigate(path)}
               className={`dashboard-sidebar-link ${active ? "is-active" : ""}`}
-              title={collapsed ? label : undefined}
               data-tour={`nav-${label.toLowerCase().replace(/\s+/g, "-")}`}
             >
               <Icon />
               {!collapsed && <span>{label}</span>}
-              {locked && <MdLockOutline className="dashboard-nav-lock" />}
+              {locked && <LuLock className="dashboard-nav-lock" />}
             </button>
           );
         })}
       </nav>
 
-      {canHandleOrders && (
+      {canHandleOrders && wrapTooltip(
+        "New Order",
         <button
           type="button"
           onClick={onCreateOrder}
           className="dashboard-create-order"
-          title={collapsed ? "New Order" : undefined}
         >
-          <MdOutlineRoomService />
+          <LuChefHat />
           {!collapsed && <span>New Order</span>}
         </button>
       )}
 
-      <button
-        type="button"
-        onClick={onToggleCollapse}
-        className="dashboard-collapse"
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed ? <MdChevronRight /> : <MdChevronLeft />}
-        {!collapsed && <span>Collapse</span>}
-      </button>
+      {wrapTooltip(
+        collapsed ? "Expand sidebar" : "Collapse sidebar",
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className="dashboard-collapse"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? <LuChevronRight /> : <LuChevronLeft />}
+          {!collapsed && <span>Collapse</span>}
+        </button>
+      )}
     </aside>
   );
 };

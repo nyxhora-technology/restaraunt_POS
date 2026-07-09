@@ -4,11 +4,18 @@ import { QRCodeSVG } from "qrcode.react";
 import { enqueueSnackbar } from "notistack";
 import {
   MdAdd,
+  MdContentCopy,
   MdDelete,
   MdDownload,
-  MdQrCode,
-  MdToggleOff,
+  MdQrCode2,
+  MdCheckCircle,
+  MdInsights,
   MdToggleOn,
+  MdToggleOff,
+  MdClose,
+  MdPalette,
+  MdLink,
+  MdVisibility,
 } from "react-icons/md";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -28,9 +35,20 @@ dayjs.extend(relativeTime);
 
 const FRONTEND_BASE = window.location.origin;
 
+const QR_COLORS = [
+  { name: "Forest", primary: "#10b981", bg: "#ffffff" },
+  { name: "Ocean", primary: "#3b82f6", bg: "#ffffff" },
+  { name: "Royal", primary: "#8b5cf6", bg: "#ffffff" },
+  { name: "Sunset", primary: "#f59e0b", bg: "#ffffff" },
+  { name: "Rose", primary: "#f43f5e", bg: "#ffffff" },
+  { name: "Slate", primary: "#1e293b", bg: "#ffffff" },
+];
+
 const QrCodeCard = ({ qr, onToggle, onDelete }) => {
   const svgRef = useRef(null);
   const qrUrl = `${FRONTEND_BASE}/qr/${qr.slug}`;
+  const [qrColor, setQrColor] = useState(QR_COLORS[0]);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
   const downloadQR = () => {
     const svgEl = svgRef.current?.querySelector("svg");
@@ -44,11 +62,11 @@ const QrCodeCard = ({ qr, onToggle, onDelete }) => {
     });
     const url = URL.createObjectURL(svgBlob);
     img.onload = () => {
-      canvas.width = 400;
-      canvas.height = 400;
+      canvas.width = 600;
+      canvas.height = 600;
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, 400, 400);
-      ctx.drawImage(img, 50, 50, 300, 300);
+      ctx.fillRect(0, 0, 600, 600);
+      ctx.drawImage(img, 75, 75, 450, 450);
       URL.revokeObjectURL(url);
       const link = document.createElement("a");
       link.download = `qr-${qr.slug}.png`;
@@ -58,84 +76,128 @@ const QrCodeCard = ({ qr, onToggle, onDelete }) => {
     img.src = url;
   };
 
+  const copyUrl = () => {
+    navigator.clipboard.writeText(qrUrl);
+    enqueueSnackbar("URL copied to clipboard!", { variant: "success" });
+  };
+
   return (
-    <div className="dashboard-management-row rounded-xl p-5 flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-bold text-white text-lg">{qr.label}</h3>
-          {qr.table && (
-            <span className="text-xs bg-[#285430]/50 text-[#02ca3a] px-2 py-1 rounded mt-1 inline-block">
-              {qr.table.label || `Table ${qr.table.tableNo}`}
-            </span>
-          )}
+    <div className={`qr-card ${!qr.enabled ? "qr-card--disabled" : ""}`}>
+      {/* Card Header */}
+      <div className="qr-card__header">
+        <div className="qr-card__title-row">
+          <div className="qr-card__icon-wrap">
+            <MdQrCode2 size={20} />
+          </div>
+          <div className="qr-card__title-text">
+            <h3>{qr.label}</h3>
+            {qr.table && (
+              <span className="qr-card__table-badge">
+                <MdLink size={10} />
+                {qr.table.label || `Table ${qr.table.tableNo}`}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="qr-card__actions-top">
           <button
             onClick={() => onToggle(qr)}
+            className={`qr-card__toggle ${qr.enabled ? "qr-card__toggle--on" : ""}`}
             title={qr.enabled ? "Disable QR" : "Enable QR"}
-            className={`text-2xl ${qr.enabled ? "text-[#02ca3a]" : "text-[#ababab]"}`}
           >
-            {qr.enabled ? <MdToggleOn /> : <MdToggleOff />}
+            {qr.enabled ? <MdToggleOn size={24} /> : <MdToggleOff size={24} />}
           </button>
           <button
             onClick={() => {
               if (window.confirm(`Delete QR code "${qr.label}"?`))
                 onDelete(qr.id);
             }}
-            className="text-red-400 hover:text-red-300 p-1"
+            className="qr-card__delete"
+            title="Delete QR"
           >
-            <MdDelete size={18} />
+            <MdDelete size={16} />
           </button>
         </div>
       </div>
 
-      {/* QR code display */}
-      <div
-        ref={svgRef}
-        className={`flex justify-center p-4 rounded-lg bg-white ${!qr.enabled ? "opacity-40 grayscale" : ""}`}
-      >
-        <QRCodeSVG
-          value={qrUrl}
-          size={160}
-          level="H"
-          includeMargin={false}
-          imageSettings={{
-            src: "",
-            height: 0,
-            width: 0,
-            excavate: false,
-          }}
-        />
+      {/* QR Code Display */}
+      <div className="qr-card__code-area" ref={svgRef}>
+        <div className="qr-card__code-frame">
+          <QRCodeSVG
+            value={qrUrl}
+            size={180}
+            level="H"
+            includeMargin={false}
+            fgColor={qrColor.primary}
+            bgColor={qrColor.bg}
+            imageSettings={{
+              src: "",
+              height: 0,
+              width: 0,
+              excavate: false,
+            }}
+          />
+        </div>
+        {/* Corner decorations */}
+        <div className="qr-card__corner qr-card__corner--tl" />
+        <div className="qr-card__corner qr-card__corner--tr" />
+        <div className="qr-card__corner qr-card__corner--bl" />
+        <div className="qr-card__corner qr-card__corner--br" />
       </div>
 
-      {/* URL */}
-      <div className="bg-[var(--dash-surface-muted)] px-3 py-2 rounded text-xs text-[var(--dash-muted)] truncate font-mono">
-        {qrUrl}
-      </div>
-
-      {/* Stats row */}
-      <div className="flex justify-between items-center text-xs text-[#6b7280]">
-        <span>👁 {qr.scanCount} scans</span>
-        <span>Created {dayjs(qr.createdAt).fromNow()}</span>
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-2 mt-auto">
+      {/* Color Picker */}
+      <div className="qr-card__color-section">
         <button
-          onClick={downloadQR}
-          className="dashboard-secondary-button flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm transition-colors"
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          className="qr-card__color-toggle"
         >
-          <MdDownload size={16} /> Download PNG
+          <MdPalette size={14} />
+          <span>{qrColor.name}</span>
         </button>
-        <button
-          onClick={() => {
-            navigator.clipboard.writeText(qrUrl);
-            enqueueSnackbar("URL copied!", { variant: "success" });
-          }}
-          className="dashboard-secondary-button flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm transition-colors"
-        >
-          Copy URL
+        {showColorPicker && (
+          <div className="qr-card__color-picker">
+            {QR_COLORS.map((color) => (
+              <button
+                key={color.name}
+                onClick={() => {
+                  setQrColor(color);
+                  setShowColorPicker(false);
+                }}
+                className={`qr-card__color-swatch ${qrColor.name === color.name ? "active" : ""}`}
+                style={{ backgroundColor: color.primary }}
+                title={color.name}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* URL Display */}
+      <div className="qr-card__url">
+        <MdLink size={12} />
+        <span>{qrUrl}</span>
+      </div>
+
+      {/* Stats */}
+      <div className="qr-card__stats">
+        <div className="qr-card__stat">
+          <MdVisibility size={14} />
+          <span>{qr.scanCount} scans</span>
+        </div>
+        <div className="qr-card__stat">
+          <span>Created {dayjs(qr.createdAt).fromNow()}</span>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="qr-card__buttons">
+        <button onClick={downloadQR} className="qr-card__btn qr-card__btn--primary">
+          <MdDownload size={16} />
+          <span>Download</span>
+        </button>
+        <button onClick={copyUrl} className="qr-card__btn qr-card__btn--secondary">
+          <MdContentCopy size={16} />
+          <span>Copy URL</span>
         </button>
       </div>
     </div>
@@ -210,66 +272,93 @@ const QrManagement = () => {
 
   if (!hasQrMenu) return <UpgradeBanner feature="QR_MENU" />;
   const activeCount = codes.filter((c) => c.enabled).length;
+  const totalScans = codes.reduce((s, c) => s + c.scanCount, 0);
 
   return (
-    <div className="dashboard-management-panel container mx-auto p-5">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-semibold">QR Menu Codes</h2>
-          <p className="text-sm text-[var(--dash-muted)] mt-1">
-            Generate browse-only digital menus. Guests view dishes and prices;
-            staff place all orders in the POS.
-          </p>
+    <div className="qr-mgmt">
+      {/* Hero Header */}
+      <div className="qr-mgmt__hero">
+        <div className="qr-mgmt__hero-bg">
+          <div className="qr-mgmt__hero-orb qr-mgmt__hero-orb--1" />
+          <div className="qr-mgmt__hero-orb qr-mgmt__hero-orb--2" />
+          <div className="qr-mgmt__hero-grid" />
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-[#02ca3a] text-gray-900 font-bold px-5 py-2.5 rounded-lg hover:bg-[#02a830] transition-colors"
-        >
-          <MdAdd size={20} /> Generate QR
-        </button>
+        <div className="qr-mgmt__hero-content">
+          <div className="qr-mgmt__hero-text">
+            <div className="qr-mgmt__badge">
+              <MdQrCode2 size={14} />
+              <span>QR Menu</span>
+            </div>
+            <h1>Digital Menu Codes</h1>
+            <p>
+              Create QR codes for guests to scan and browse your menu.
+              Staff place all orders directly in the POS.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="qr-mgmt__cta"
+          >
+            <MdAdd size={20} />
+            <span>Generate QR</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
-        <div className="dashboard-inventory-stat">
-          <h3>Total QR Codes</h3>
-          <p className="text-2xl font-bold text-white mt-1">{codes.length}</p>
+      <div className="qr-mgmt__stats">
+        <div className="qr-mgmt__stat qr-mgmt__stat--total">
+          <div className="qr-mgmt__stat-icon">
+            <MdQrCode2 size={22} />
+          </div>
+          <div className="qr-mgmt__stat-info">
+            <span className="qr-mgmt__stat-label">Total Codes</span>
+            <span className="qr-mgmt__stat-value">{codes.length}</span>
+          </div>
         </div>
-        <div className="dashboard-inventory-stat">
-          <h3>Active</h3>
-          <p className="text-2xl font-bold text-[#02ca3a] mt-1">
-            {activeCount}
-          </p>
+        <div className="qr-mgmt__stat qr-mgmt__stat--active">
+          <div className="qr-mgmt__stat-icon">
+            <MdCheckCircle size={22} />
+          </div>
+          <div className="qr-mgmt__stat-info">
+            <span className="qr-mgmt__stat-label">Active</span>
+            <span className="qr-mgmt__stat-value">{activeCount}</span>
+          </div>
         </div>
-        <div className="dashboard-inventory-stat">
-          <h3>Total Scans</h3>
-          <p className="text-2xl font-bold text-white mt-1">
-            {codes.reduce((s, c) => s + c.scanCount, 0)}
-          </p>
+        <div className="qr-mgmt__stat qr-mgmt__stat--scans">
+          <div className="qr-mgmt__stat-icon">
+            <MdInsights size={22} />
+          </div>
+          <div className="qr-mgmt__stat-info">
+            <span className="qr-mgmt__stat-label">Total Scans</span>
+            <span className="qr-mgmt__stat-value">{totalScans}</span>
+          </div>
         </div>
       </div>
 
+      {/* Content */}
       {isLoading ? (
-        <div className="text-center py-12 text-[var(--dash-muted)]">
-          Loading QR codes...
+        <div className="qr-mgmt__loading">
+          <div className="qr-mgmt__spinner" />
+          <span>Loading QR codes...</span>
         </div>
       ) : codes.length === 0 ? (
-        <div className="text-center py-16 bg-[var(--dash-surface-muted)] border border-dashed border-[var(--dash-border)] rounded-xl">
-          <MdQrCode size={48} className="text-[#383838] mx-auto mb-3" />
-          <h3 className="text-white font-semibold mb-1">No QR codes yet</h3>
-          <p className="text-[var(--dash-muted)] text-sm mb-4">
-            Generate your first QR code for guests to scan.
-          </p>
+        <div className="qr-mgmt__empty">
+          <div className="qr-mgmt__empty-icon">
+            <MdQrCode2 size={56} />
+          </div>
+          <h3>No QR codes yet</h3>
+          <p>Generate your first QR code to let guests scan and view your menu.</p>
           <button
             onClick={() => setShowModal(true)}
-            className="bg-[#02ca3a] text-gray-900 font-bold px-5 py-2.5 rounded-lg"
+            className="qr-mgmt__cta qr-mgmt__cta--small"
           >
-            Generate First QR
+            <MdAdd size={18} />
+            <span>Generate First QR</span>
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="qr-mgmt__grid">
           {codes.map((qr) => (
             <QrCodeCard
               key={qr.id}
@@ -286,7 +375,7 @@ const QrManagement = () => {
       {/* Create Modal */}
       {showModal && (
         <div
-          className="dashboard-modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="qr-mgmt__modal-backdrop"
           role="dialog"
           aria-modal="true"
           aria-label="Generate QR Code"
@@ -294,51 +383,61 @@ const QrManagement = () => {
             if (event.target === event.currentTarget) closeCreateModal();
           }}
         >
-          <div className="dashboard-detail-modal rounded-xl w-full max-w-md p-6 shadow-2xl">
-            <h3 className="text-[var(--dash-text)] text-xl font-bold mb-5">
-              Generate QR Code
-            </h3>
-
-            <div className="mb-4">
-              <label className="block text-sm text-[var(--dash-muted)] mb-1">
-                Label *
-              </label>
-              <input
-                type="text"
-                value={newLabel}
-                onChange={(e) => setNewLabel(e.target.value)}
-                placeholder="e.g. General Menu, Table 5, Bar Area"
-                className="dashboard-form-control w-full px-4 py-3 rounded-lg focus:outline-none"
-              />
+          <div className="qr-mgmt__modal">
+            <div className="qr-mgmt__modal-header">
+              <div className="qr-mgmt__modal-title">
+                <div className="qr-mgmt__modal-icon">
+                  <MdQrCode2 size={24} />
+                </div>
+                <div>
+                  <h3>Generate QR Code</h3>
+                  <p>Create a new QR code for your menu</p>
+                </div>
+              </div>
+              <button onClick={closeCreateModal} className="qr-mgmt__modal-close">
+                <MdClose size={20} />
+              </button>
             </div>
 
-            <div className="mb-6">
-              <label className="block text-sm text-[var(--dash-muted)] mb-1">
-                Link to Table (Optional)
-              </label>
-              <CustomSelect
-                className="w-full"
-                name="newTableId"
-                value={newTableId}
-                onChange={(e) => setNewTableId(e.target.value)}
-                options={[
-                  { value: "", label: "— No specific table —" },
-                  ...tables.map((t) => ({
-                    value: t.id,
-                    label: `${t.label || `Table ${t.tableNo}`} (${t.seats} seats)`
-                  }))
-                ]}
-              />
-              <p className="text-xs text-[#6b7280] mt-1">
-                Table-linked QRs show the table number on the menu page.
-              </p>
+            <div className="qr-mgmt__modal-body">
+              <div className="qr-mgmt__field">
+                <label>Label *</label>
+                <input
+                  type="text"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder="e.g. General Menu, Table 5, Bar Area"
+                  className="qr-mgmt__input"
+                  autoFocus
+                />
+              </div>
+
+              <div className="qr-mgmt__field">
+                <label>Link to Table (Optional)</label>
+                <CustomSelect
+                  className="qr-mgmt__select"
+                  name="newTableId"
+                  value={newTableId}
+                  onChange={(e) => setNewTableId(e.target.value)}
+                  options={[
+                    { value: "", label: "No specific table" },
+                    ...tables.map((t) => ({
+                      value: t.id,
+                      label: `${t.label || `Table ${t.tableNo}`} (${t.seats} seats)`,
+                    })),
+                  ]}
+                />
+                <span className="qr-mgmt__hint">
+                  Table-linked QRs display the table number on the menu page.
+                </span>
+              </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="qr-mgmt__modal-footer">
               <button
                 type="button"
                 onClick={closeCreateModal}
-                className="dashboard-secondary-button flex-1 py-3 rounded-lg transition-colors"
+                className="qr-mgmt__btn qr-mgmt__btn--ghost"
               >
                 Cancel
               </button>
@@ -355,9 +454,19 @@ const QrManagement = () => {
                   });
                 }}
                 disabled={createMutation.isPending}
-                className="dashboard-primary-button flex-1 rounded-lg py-3 font-bold disabled:opacity-60"
+                className="qr-mgmt__cta qr-mgmt__cta--modal"
               >
-                {createMutation.isPending ? "Generating..." : "Generate QR"}
+                {createMutation.isPending ? (
+                  <>
+                    <div className="qr-mgmt__spinner qr-mgmt__spinner--small" />
+                    <span>Generating...</span>
+                  </>
+                ) : (
+                  <>
+                    <MdQrCode2 size={18} />
+                    <span>Generate QR</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

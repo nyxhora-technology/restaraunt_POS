@@ -153,7 +153,7 @@ const updateMyRestaurant = async (req, res, next) => {
     // SECURITY: Explicitly allowlist updatable fields to prevent mass assignment.
     // Fields like status, plan, slug, ownerId, restaurantId must never be
     // writable by the restaurant owner through this endpoint.
-    const { name, address, city, phone, email, description, logo, currency } = req.body;
+    const { name, address, city, phone, email, description, logo, currency, timezone } = req.body;
     const safeData = {};
     if (name !== undefined) safeData.name = name;
     if (address !== undefined) safeData.address = address;
@@ -163,6 +163,7 @@ const updateMyRestaurant = async (req, res, next) => {
     if (description !== undefined) safeData.description = description;
     if (logo !== undefined) safeData.logo = logo;
     if (currency !== undefined) safeData.currency = currency;
+    if (timezone !== undefined) safeData.timezone = timezone;
 
     const restaurant = await prisma.restaurant.update({
       where: { id: req.restaurantId },

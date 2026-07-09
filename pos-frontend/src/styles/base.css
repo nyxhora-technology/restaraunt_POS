@@ -14,3 +14,18 @@ body { margin: 0; background: #0b1114; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Premium Micro-Haptics: Button Clicks */
+.dashboard-primary-button:active,
+.dashboard-secondary-button:active,
+.dashboard-danger-button:active,
+button.dashboard-text-button:active {
+  transform: scale(0.96);
+}
+
+.dashboard-primary-button,
+.dashboard-secondary-button,
+.dashboard-danger-button,
+button.dashboard-text-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}

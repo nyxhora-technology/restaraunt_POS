@@ -158,10 +158,10 @@ const RecentOrders = ({ search = "" }) => {
                 localStorage.setItem("dashboard_order_limit", val);
               }}
               options={[
-                { value: 10, label: "10 Orders" },
-                { value: 20, label: "20 Orders" },
-                { value: 50, label: "50 Orders" },
-                { value: 100, label: "100 Orders" },
+                { value: 10, label: "Show: 10" },
+                { value: 20, label: "Show: 20" },
+                { value: 50, label: "Show: 50" },
+                { value: 100, label: "Show: 100" },
               ]}
             />
           </div>

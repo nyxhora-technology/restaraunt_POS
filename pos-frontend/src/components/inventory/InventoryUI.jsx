@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { motion } from "framer-motion";
 import CustomSelect from "../shared/CustomSelect";
 
 export const Icon = {
@@ -48,15 +49,26 @@ export const Modal = ({ onClose, title, children, wide }) => {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className={`bg-[var(--dash-surface)] rounded-xl shadow-2xl border border-[var(--dash-border)] w-full ${wide ? "max-w-3xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto`}>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" 
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 350, damping: 25 }}
+        className={`bg-[var(--dash-surface)] rounded-xl shadow-2xl border border-[var(--dash-border)] w-full ${wide ? "max-w-3xl" : "max-w-lg"} max-h-[90vh] overflow-y-auto`}
+      >
         <div className="flex items-center justify-between p-5 border-b border-[var(--dash-border)] sticky top-0 bg-[var(--dash-surface)] z-10">
           <h2 className="text-[var(--dash-text)] text-lg font-bold">{title}</h2>
           <button onClick={onClose} className="text-[var(--dash-muted)] hover:text-[var(--dash-text)] transition-colors"><Icon.X /></button>
         </div>
         <div className="p-5">{children}</div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

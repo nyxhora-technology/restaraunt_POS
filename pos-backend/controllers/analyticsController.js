@@ -1,14 +1,14 @@
 const prisma = require("../config/prisma");
 const { getPlanLimit } = require("../config/planFeatures");
+const { dayjs } = require("../utils/dateUtils");
 
 const analytics = async (req, res, next) => {
   try {
     const requestedDays = Number(req.query.days || 30);
     const planDays = getPlanLimit(req.restaurant?.plan || "STARTER", "analytics_days");
     const days = Math.min(requestedDays, planDays ?? requestedDays);
-    const from = new Date();
-    from.setHours(0, 0, 0, 0);
-    from.setDate(from.getDate() - days + 1);
+    const tz = req.restaurant?.timezone || "Asia/Kolkata";
+    const from = dayjs().tz(tz).startOf("day").subtract(days - 1, "day").toDate();
 
     const orders = await prisma.order.findMany({
       where: { restaurantId: req.restaurantId, createdAt: { gte: from } },
@@ -31,17 +31,17 @@ const analytics = async (req, res, next) => {
     let cancelled = 0;
 
     for (let index = 0; index < days; index += 1) {
-      const date = new Date(from);
-      date.setDate(from.getDate() + index);
-      dailyMap.set(date.toISOString().slice(0, 10), 0);
+      const dateStr = dayjs(from).tz(tz).add(index, "day").format("YYYY-MM-DD");
+      dailyMap.set(dateStr, 0);
     }
 
     orders.forEach((order) => {
-      heatmap[order.createdAt.getDay()][order.createdAt.getHours()] += 1;
+      const localDate = dayjs(order.createdAt).tz(tz);
+      heatmap[localDate.day()][localDate.hour()] += 1;
       if (order.orderStatus === "COMPLETED") completed += 1;
       if (["CANCELLED", "REJECTED"].includes(order.orderStatus)) cancelled += 1;
       if (order.paymentStatus === "PAID") {
-        const key = order.createdAt.toISOString().slice(0, 10);
+        const key = localDate.format("YYYY-MM-DD");
         dailyMap.set(key, (dailyMap.get(key) || 0) + order.totalWithTax);
         const method = order.paymentMethod || "Other";
         paymentMap.set(method, (paymentMap.get(method) || 0) + order.totalWithTax);

@@ -1,4 +1,4 @@
-﻿/* Subtle pulse — used for PENDING badge dot */
+/* Subtle pulse — used for PENDING badge dot */
 @keyframes status-pulse {
   0%, 100% { opacity: 1;    transform: scale(1); }
   50%       { opacity: 0.45; transform: scale(0.7); }
@@ -847,7 +847,7 @@
 
 .more-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 14px;
   margin-top: 18px;
 }
@@ -1096,7 +1096,7 @@
   border-radius: 8px;
   background: var(--dash-surface);
   box-shadow: var(--dash-shadow);
-  overflow: hidden;
+  overflow: visible;
   min-width: 0;
 }
 
@@ -3073,10 +3073,10 @@
 }
 
 .dashboard-service-pulse .dashboard-glance-list > div {
-  min-height: 104px;
+  min-height: 80px;
   border-right: 1px solid var(--dash-border);
   border-bottom: 1px solid var(--dash-border);
-  padding: 16px;
+  padding: 12px 16px;
 }
 
 .dashboard-service-pulse .dashboard-glance-list > div:nth-child(2n) {
@@ -3094,8 +3094,8 @@
 }
 
 .dashboard-operations-rail .dashboard-action-list button {
-  min-height: 54px;
-  padding: 8px 10px;
+  min-height: 44px;
+  padding: 6px 10px;
 }
 
 .dashboard-insight-grid {
@@ -3218,3 +3218,79 @@
 .qr-powered-banner{position:sticky;bottom:12px;z-index:15;margin:24px auto 12px;width:min(520px,calc(100% - 24px));display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 16px;border:1px solid #18251d1f;background:#fffef8ed;color:#1b251f;border-radius:14px;box-shadow:0 12px 35px #17241c25;backdrop-filter:blur(14px);font-size:12px}.qr-powered-banner strong{color:#159765}.qr-powered-banner em{font-style:normal;font-weight:750;color:#159765}
 .receipt-pro-locked{display:inline-flex;align-items:center;gap:7px;opacity:.72}.receipt-pro-locked span{padding:2px 5px;border-radius:4px;background:#18b979;color:#062117;font-size:8px;letter-spacing:.08em}
 .plan-limit-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid var(--dash-border);background:var(--dash-surface-muted);border-radius:8px;color:var(--dash-muted);font-size:10px;font-weight:800;white-space:nowrap}.plan-limit-badge small{padding-left:5px;border-left:1px solid var(--dash-border);font-size:9px;font-weight:650}.plan-limit-badge.is-warning{border-color:#f6a72355;background:#f6a72312;color:#f6a723}
+
+
+/* ── Animated Lucide SVG Hover Effects ── */
+.dashboard-sidebar-link svg[stroke="currentColor"] {
+  /* Set base stroke properties so it can be animated */
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0;
+}
+
+.dashboard-sidebar-link:hover svg[stroke="currentColor"] path,
+.dashboard-sidebar-link:hover svg[stroke="currentColor"] line,
+.dashboard-sidebar-link:hover svg[stroke="currentColor"] polyline,
+.dashboard-sidebar-link:hover svg[stroke="currentColor"] polygon,
+.dashboard-sidebar-link:hover svg[stroke="currentColor"] rect,
+.dashboard-sidebar-link:hover svg[stroke="currentColor"] circle {
+  animation: draw-icon 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes draw-icon {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  20% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+
+/* ── Custom Animated Inventory Stars ── */
+.animated-inventory-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.inventory-base-icon {
+  z-index: 2;
+}
+.inventory-star {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  stroke: var(--dash-primary);
+  fill: var(--dash-primary);
+  opacity: 0;
+  transform: scale(0);
+  z-index: 1;
+}
+.inventory-star-1 { top: -6px; right: -6px; }
+.inventory-star-2 { bottom: 0px; left: -8px; width: 8px; height: 8px; }
+.inventory-star-3 { top: -2px; left: -4px; width: 6px; height: 6px; }
+
+.dashboard-sidebar-link:hover .inventory-star {
+  animation: star-glow 1.5s infinite alternate;
+}
+.dashboard-sidebar-link:hover .inventory-star-1 { animation-delay: 0s; }
+.dashboard-sidebar-link:hover .inventory-star-2 { animation-delay: 0.3s; }
+.dashboard-sidebar-link:hover .inventory-star-3 { animation-delay: 0.6s; }
+
+@keyframes star-glow {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+    filter: drop-shadow(0 0 0px var(--dash-primary));
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px var(--dash-primary-strong));
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+    filter: drop-shadow(0 0 2px var(--dash-primary));
+  }
+}
+
+
+/* -- Tooltip wrappers for Analytics -- */
+.analytics-heat-col { display: flex; width: 100%; aspect-ratio: 1; }
+.analytics-heat-col i { flex: 1; width: 100%; height: 100%; }
