@@ -239,7 +239,7 @@ const MenuContainer = () => {
       )}
 
       <div className="menu-item-grid scrollbar-hide">
-        {displayedItems.map((item, idx) => {
+        {displayedItems.map((item) => {
           return (
             <div key={item.id} className="menu-item-card relative">
               <div className="flex w-full items-start justify-between gap-3">

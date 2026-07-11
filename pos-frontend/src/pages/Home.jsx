@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "../styles/dashboard.css";
 import { Helmet } from "react-helmet-async";
 import { useQuery } from "@tanstack/react-query";
 import { useSelector } from "react-redux";

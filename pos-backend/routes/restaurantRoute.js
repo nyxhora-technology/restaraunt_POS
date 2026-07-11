@@ -9,6 +9,9 @@ const {
   resetStaffPassword,
   removeStaff,
   changeFirstPassword,
+  listMySessions,
+  revokeMySession,
+  revokeOtherMySessions,
 } = require("../controllers/restaurantController");
 const { requireAuth } = require("../middlewares/requireAuth");
 const { requireTenant } = require("../middlewares/requireTenant");
@@ -27,6 +30,9 @@ const profileFields = {
   logo: z.string().url().max(1000).optional(),
   // currency was previously missing — caused currency updates to be silently stripped
   currency: z.enum(["INR", "USD", "EUR", "GBP", "AUD"]).optional(),
+  // GST filing fields
+  gstin: z.string().trim().max(15).optional().nullable(),
+  stateCode: z.string().trim().max(2).optional().nullable(),
 };
 
 router.post(
@@ -50,6 +56,14 @@ router.get("/context", requireAuth, (req, res) => {
   });
 });
 router.get("/me", requireAuth, getMyRestaurant);
+router.get("/security/sessions", requireAuth, listMySessions);
+router.delete("/security/sessions/other", requireAuth, revokeOtherMySessions);
+router.delete(
+  "/security/sessions/:sessionId",
+  requireAuth,
+  validate(z.object({ sessionId: z.string().min(1) }), "params"),
+  revokeMySession,
+);
 router.put(
   "/me",
   requireTenant,

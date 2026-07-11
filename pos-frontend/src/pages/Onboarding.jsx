@@ -20,6 +20,10 @@ import {
   HiClock,
   HiX,
   HiOutlineRefresh,
+  HiOutlineClipboardList,
+  HiOutlineUsers,
+  HiOutlineDeviceMobile,
+  HiOutlineGift,
 } from "react-icons/hi";
 import CustomSelect from "../components/shared/CustomSelect";
 
@@ -86,6 +90,7 @@ export default function Onboarding() {
     email: email || "",
     description: "",
     currency: "INR",
+    taxRate: 18,
   });
   const [resubmit, setResubmit] = useState(false);
 
@@ -176,7 +181,7 @@ export default function Onboarding() {
           /* ── Waiting Room ─────────────────────────────────────────────── */
           <div className="onboarding-waiting-room">
             <div className="onboarding-waiting-hero">
-              <div className="onboarding-waiting-pulse">✅</div>
+              <div className="onboarding-waiting-pulse"><HiCheckCircle color="#35c0c3" /></div>
               <h1>Application submitted!</h1>
               <p className="onboarding-waiting-sub">
                 We received <strong>{restaurant.name}</strong>&apos;s details and our team is reviewing them now.
@@ -186,6 +191,9 @@ export default function Onboarding() {
                 <strong>Usually approved within 2 hours</strong>
                 <span>· We&apos;ll email you at {email}</span>
               </div>
+              <p className="onboarding-waiting-reserve-note">
+                Your spot is reserved — complete your menu planning while you wait so you’re ready the moment we approve.
+              </p>
             </div>
 
             {/* What happens next — reduces anxiety */}
@@ -221,17 +229,17 @@ export default function Onboarding() {
               <h2>While you wait, you can plan</h2>
               <div className="onboarding-tips-grid">
                 <div>
-                  <span>📋</span>
+                  <span><HiOutlineClipboardList /></span>
                   <strong>Write your menu</strong>
                   <p>List your dishes, categories, and prices so you can add them on day one.</p>
                 </div>
                 <div>
-                  <span>👥</span>
+                  <span><HiOutlineUsers /></span>
                   <strong>Tell your team</strong>
                   <p>Once approved, invite your cashier, waiter, and kitchen staff in 30 seconds.</p>
                 </div>
                 <div>
-                  <span>📱</span>
+                  <span><HiOutlineDeviceMobile /></span>
                   <strong>Bookmark this page</strong>
                   <p>Open it on the tablet or device you&apos;ll use at the counter — it works everywhere.</p>
                 </div>
@@ -270,7 +278,7 @@ export default function Onboarding() {
     <main className="onboarding-shell">
       <header className="onboarding-topbar">
         <a className="onboarding-brand" href="/"><img src={logo} alt="" /><span>Restro</span></a>
-        <span className="onboarding-greeting">Welcome, {userName?.split(" ")[0] || "there"} 👋</span>
+        <span className="onboarding-greeting">Welcome, {userName?.split(" ")[0] || "there"}</span>
         <button className="onboarding-logout" onClick={handleLogout}>Sign out</button>
       </header>
 
@@ -320,7 +328,7 @@ export default function Onboarding() {
           {/* Referral Banner */}
           {refValid && (
             <div className="onboarding-referral-banner">
-              <span>🎁</span>
+              <span><HiOutlineGift color="#35c0c3" /></span>
               <div>
                 <strong>You were referred by {refData.referredByName} ({refData.referredByRestaurant})</strong>
                 <p>Get approved and earn <strong>+{refData.youGet} free days</strong>. They earn <strong>+{refData.theyGet} days</strong> too!</p>
@@ -329,9 +337,11 @@ export default function Onboarding() {
           )}
 
           <div className="onboarding-step-header">
-            <span className="onboarding-step-badge">Step {step + 1} of {STEPS.length}</span>
+            <span className="onboarding-step-badge">
+              Your workspace is {Math.round(((step + 1) / STEPS.length) * 100)}% ready
+            </span>
             <h2>{step === 0 ? "What's your restaurant called?" : step === 1 ? "How can customers reach you?" : "A little more about your restaurant"}</h2>
-            <p>{step === 0 ? "This will be the name shown across your workspace." : step === 1 ? "We'll use these to set up your profile and send approval updates." : "Optional details that help customise your experience."}</p>
+            <p>{step === 0 ? "This will be the name shown across your workspace." : step === 1 ? "We\'ll use these to set up your profile and send approval updates." : "Optional details that help customise your experience."}</p>
           </div>
 
           <form
@@ -421,6 +431,19 @@ export default function Onboarding() {
                   />
                 </label>
                 <label className="onboarding-field">
+                  <span><HiOutlineDocumentText /> Tax Rate % <em>(GST)</em></span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={formData.taxRate}
+                    onChange={(e) => update("taxRate", parseFloat(e.target.value) || 0)}
+                    placeholder="18"
+                  />
+                  <small className="onboarding-field-hint">Standard Indian GST is 18% — edit if different for your category</small>
+                </label>
+                <label className="onboarding-field">
                   <span><HiOutlineDocumentText /> Short Description <em>(optional)</em></span>
                   <textarea
                     value={formData.description}
@@ -446,8 +469,8 @@ export default function Onboarding() {
                 {mutation.isPending
                   ? "Submitting…"
                   : step < STEPS.length - 1
-                    ? <><span>Continue</span> <HiArrowRight /></>
-                    : <><span>Submit for approval</span> <HiArrowRight /></>
+                    ? <><span>{step === 0 ? "Build my workspace" : "Continue"}</span> <HiArrowRight /></>
+                    : <><span>Claim my workspace</span> <HiArrowRight /></>
                 }
               </button>
             </div>

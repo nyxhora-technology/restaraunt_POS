@@ -11,7 +11,7 @@ const prerenderDir = path.join(projectRoot, ".prerender");
 const entryUrl = pathToFileURL(
   path.join(prerenderDir, "entry-prerender.js"),
 ).href;
-const { renderPublicRoute } = await import(entryUrl);
+const { publicPaths, renderPublicRoute } = await import(entryUrl);
 const baseHtml = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
 
 const injectMarkup = (html, markup) => {
@@ -27,16 +27,21 @@ const replacePageHead = (html, head) => {
     .replace(/<title>[\s\S]*?<\/title>/i, "")
     .replace(/<meta\s+name="description"[^>]*>/i, "")
     .replace(/<meta\s+name="robots"[^>]*>/i, "")
-    .replace(/<link\s+rel="canonical"[^>]*>/i, "");
+    .replace(/<link\s+rel="canonical"[^>]*>/i, "")
+    .replace(
+      /\s*<meta\s+(property="og:[^"]+"|name="twitter:[^"]+"|property="article:[^"]+")[^>]*>/gi,
+      "",
+    )
+    .replace(
+      /\s*<script\s+type="application\/ld\+json">[\s\S]*?<\/script>/gi,
+      "",
+    );
   return next.replace("</head>", `${head}\n</head>`);
 };
 
-for (const pathname of ["/", "/terms", "/privacy"]) {
+for (const pathname of publicPaths) {
   const { markup, head } = renderPublicRoute(pathname);
-  const routeHtml =
-    pathname === "/"
-      ? injectMarkup(baseHtml, markup)
-      : injectMarkup(replacePageHead(baseHtml, head), markup);
+  const routeHtml = injectMarkup(replacePageHead(baseHtml, head), markup);
   const outputPath =
     pathname === "/"
       ? path.join(distDir, "index.html")

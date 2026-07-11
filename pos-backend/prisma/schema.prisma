@@ -99,6 +99,8 @@ model Restaurant {
   description String?
   currency    String           @default("INR")
   timezone    String           @default("Asia/Kolkata")
+  gstin       String?          // 15-char GST Identification Number for GSTR filing
+  stateCode   String?          // 2-digit state code e.g. "27" = Maharashtra
   status      RestaurantStatus @default(PENDING)
 
   // Owner (1-to-1)
@@ -117,6 +119,7 @@ model Restaurant {
   payments       Payment[]
   auditLogs      AuditLog[]
   qrCodes        QrCode[]
+  taxGroups      TaxGroup[]
 
   // Inventory
   inventoryItems  InventoryItem[]
@@ -143,6 +146,43 @@ model Restaurant {
   @@index([status])
   @@index([ownerId])
   @@index([referralCode])
+}
+
+// ─────────────────────────────────────────
+// TAX GROUPS
+// ─────────────────────────────────────────
+
+/// Reusable tax profile assigned to menu items.
+/// Mirrors Petpooja / Posist "Tax Group" concept.
+model TaxGroup {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  name      String   // "GST 5%", "GST 18%", "Alcohol VAT", "MRP Incl. 18%", "Exempt"
+  type      TaxType  // GST | VAT | INCLUDED | EXEMPT
+
+  // GST fields (type = GST or INCLUDED)
+  cgst      Float    @default(0)  // Central GST %  (e.g. 2.5 for 5% slab)
+  sgst      Float    @default(0)  // State GST %    (e.g. 2.5 for 5% slab)
+  igst      Float    @default(0)  // Inter-state GST % (usually cgst+sgst)
+
+  // VAT fields (type = VAT — alcohol, state excise etc.)
+  vatRate   Float    @default(0)  // e.g. 25 for 25% state VAT
+  stateName String?              // e.g. "Maharashtra" — for audit trail
+
+  // Metadata
+  hsnSacCode String?  // HSN for goods / SAC for services
+  isDefault  Boolean  @default(false) // one default per restaurant
+  isSystem   Boolean  @default(false) // seeded automatically, label-only editable
+
+  menuItems  MenuItem[]
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([restaurantId, name])
+  @@index([restaurantId])
 }
 
 // ─────────────────────────────────────────
@@ -178,11 +218,24 @@ model MenuItem {
   variants       MenuItemVariant[]
   inventoryItems InventoryItem[]
 
+  // Tax assignment
+  taxGroupId String?
+  taxGroup   TaxGroup? @relation(fields: [taxGroupId], references: [id], onDelete: SetNull)
+
+  // MRP / packaged goods
+  isMrpItem  Boolean @default(false) // true = price is MRP (tax already included)
+  mrp        Float?                  // actual MRP printed on label
+
+  // GST compliance codes
+  hsnCode    String?  // HSN code for goods (packaged items)
+  sacCode    String?  // SAC code for services (restaurant food = 996331)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([restaurantId])
   @@index([categoryId])
+  @@index([taxGroupId])
 }
 
 model MenuItemVariant {
@@ -286,11 +339,24 @@ model Order {
   kitchenAcceptedAt DateTime?
   kitchenReadyAt    DateTime?
 
-  // Billing
+  // Billing — per-tax-type breakdown
   subtotal     Float
-  taxRate      Float @default(5)
-  tax          Float
+  cgstTotal    Float         @default(0) // CGST collected across all GST items
+  sgstTotal    Float         @default(0) // SGST collected across all GST items
+  igstTotal    Float         @default(0) // IGST (inter-state, rare for restaurants)
+  vatTotal     Float         @default(0) // State VAT on alcohol / non-GST items
+  taxTotal     Float         @default(0) // cgstTotal + sgstTotal + igstTotal + vatTotal
+
+  // Discount (applied before tax — correct per GST law)
+  discountType  String?      // "FLAT" | "PERCENT"
+  discountValue Float?       // the input value (₹ or %)
+  discountAmt   Float        @default(0) // computed discount in ₹
+
   totalWithTax Float
+
+  // Legacy fields — kept for backward compat with old orders, not used for new orders
+  taxRate      Float?  // deprecated: was a single flat rate
+  tax          Float?  // deprecated: was a single tax amount
 
   // Payment
   paymentStatus     PaymentStatus @default(UNPAID)
@@ -330,11 +396,27 @@ model OrderItem {
   menuItemId   String
   menuItem     MenuItem @relation(fields: [menuItemId], references: [id])
   name         String // Snapshot of name at time of order
-  price        Float // Snapshot of price at time of order
+  price        Float  // Snapshot of price at time of order (MRP for MRP items)
   quantity     Int
   note         String? // Special instructions per item
   variantId    String? // Null if no variant selected
   variantLabel String? // Snapshot of variant label (e.g., "30ml")
+
+  // Tax snapshot — frozen at order-creation time so receipts are always accurate
+  taxGroupName String?  // e.g. "GST 5%"
+  taxType      String?  // "GST" | "VAT" | "INCLUDED" | "EXEMPT"
+  cgstRate     Float    @default(0)
+  sgstRate     Float    @default(0)
+  igstRate     Float    @default(0)
+  vatRate      Float    @default(0)
+  cgstAmt      Float    @default(0)
+  sgstAmt      Float    @default(0)
+  igstAmt      Float    @default(0)
+  vatAmt       Float    @default(0)
+  taxAmt       Float    @default(0) // total tax on this line
+  isMrpItem    Boolean  @default(false)
+  hsnCode      String?
+  sacCode      String?
 
   @@index([orderId])
 }
@@ -423,6 +505,13 @@ enum Plan {
   STARTER
   PROFESSIONAL
   ENTERPRISE
+}
+
+enum TaxType {
+  GST      // CGST + SGST applied on top of price
+  VAT      // State VAT / Excise (alcohol — not GST)
+  INCLUDED // MRP item — tax already baked into the price, back-calculated
+  EXEMPT   // No tax (e.g. plain water below 20L, exempted items)
 }
 
 enum RestaurantStatus {

@@ -199,6 +199,33 @@ const MenuManagement = () => {
                   <p className="text-xs text-[var(--dash-muted)] mt-2">
                     {item.description || "No description"}
                   </p>
+                  {/* Tax group badge */}
+                  {item.taxGroup ? (
+                    <span
+                      style={{
+                        display: "inline-block",
+                        marginTop: 5,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "2px 7px",
+                        borderRadius: 4,
+                        background: item.taxGroup.type === "GST" ? "#e0f7fa"
+                          : item.taxGroup.type === "VAT" ? "#f3e8ff"
+                          : item.taxGroup.type === "INCLUDED" ? "#fef3c7"
+                          : "#dcfce7",
+                        color: item.taxGroup.type === "GST" ? "#0f9fa4"
+                          : item.taxGroup.type === "VAT" ? "#7c3aed"
+                          : item.taxGroup.type === "INCLUDED" ? "#d97706"
+                          : "#16a34a",
+                      }}
+                    >
+                      {item.taxGroup.name}
+                    </span>
+                  ) : (
+                    <span style={{ display: "inline-block", marginTop: 5, fontSize: 10, color: "#9ca3af" }}>
+                      No tax group
+                    </span>
+                  )}
                   <button
                     onClick={() =>
                       toggleMutation.mutate({

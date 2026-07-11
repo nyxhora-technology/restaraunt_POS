@@ -6,6 +6,7 @@ import {
   getPublicUrl,
   seoIndexingEnabled,
   seoRobots,
+  site,
 } from "../config/site";
 
 const EFFECTIVE_DATE = "July 4, 2026";
@@ -14,10 +15,10 @@ export default function Terms() {
   return (
     <main className="legal-page">
       <Helmet>
-        <title>Terms of Service | Restro</title>
+        <title>{`Terms of Service | ${site.brandName}`}</title>
         <meta
           name="description"
-          content="Read the terms that govern your use of the Restro restaurant operations platform."
+          content={`Read the terms that govern your use of the ${site.brandName} restaurant operations platform.`}
         />
         <meta name="robots" content={seoRobots} />
         {seoIndexingEnabled && (
@@ -27,7 +28,7 @@ export default function Terms() {
       <nav className="legal-nav">
         <Link className="marketing-brand" to="/">
           <img src={logo} alt="" />
-          <span>Restro</span>
+          <span>{site.brandName}</span>
         </Link>
         <Link className="legal-back" to="/">
           <HiArrowLeft /> Back to home
@@ -42,14 +43,14 @@ export default function Terms() {
         </header>
 
         <div className="legal-intro">
-          These Terms of Service govern access to and use of Restro. By creating
-          an account or using the service, you agree to these terms.
+          These Terms of Service govern access to and use of {site.brandName}.
+          By creating an account or using the service, you agree to these terms.
         </div>
 
         <section>
-          <h2>1. About Restro</h2>
+          <h2>1. About {site.brandName}</h2>
           <p>
-            Restro provides restaurant operations software, including tools for
+            {site.brandName} provides restaurant operations software, including tools for
             managing orders, tables, menus, staff, inventory, payments,
             reporting, and QR menus. Features may vary by plan, location, or
             integration availability.
@@ -73,7 +74,7 @@ export default function Terms() {
 
         <section>
           <h2>3. Acceptable use</h2>
-          <p>You may not use Restro to:</p>
+          <p>You may not use {site.brandName} to:</p>
           <ul>
             <li>break applicable laws or infringe another person&apos;s rights;</li>
             <li>upload malicious code or interfere with service security;</li>
@@ -86,7 +87,7 @@ export default function Terms() {
         <section>
           <h2>4. Restaurant data and responsibilities</h2>
           <p>
-            You retain ownership of business data you submit to Restro. You grant
+            You retain ownership of business data you submit to {site.brandName}. You grant
             us a limited right to host, process, transmit, and display that data
             only as needed to operate, secure, support, and improve the service.
           </p>
@@ -101,7 +102,7 @@ export default function Terms() {
           <h2>5. Payments and third-party services</h2>
           <p>
             Payment processing, email, authentication, and other integrations
-            may be supplied by third parties under their own terms. Restro does
+            may be supplied by third parties under their own terms. {site.brandName} does
             not hold full payment-card details. You are responsible for fees,
             refunds, taxes, and compliance obligations associated with your
             restaurant&apos;s transactions.
@@ -121,7 +122,7 @@ export default function Terms() {
         <section>
           <h2>7. Service availability</h2>
           <p>
-            We work to keep Restro reliable, but do not guarantee uninterrupted
+            We work to keep {site.brandName} reliable, but do not guarantee uninterrupted
             or error-free availability. Maintenance, internet failures,
             third-party outages, emergencies, or events outside our control may
             affect the service.
@@ -131,7 +132,7 @@ export default function Terms() {
         <section>
           <h2>8. Intellectual property</h2>
           <p>
-            Restro and its software, branding, interfaces, and documentation are
+            {site.brandName} and its software, branding, interfaces, and documentation are
             owned by us or our licensors. These terms grant only a limited,
             non-exclusive, non-transferable right to use the service during your
             authorized access.
@@ -141,7 +142,7 @@ export default function Terms() {
         <section>
           <h2>9. Suspension and termination</h2>
           <p>
-            You may stop using Restro at any time. We may suspend or terminate
+            You may stop using {site.brandName} at any time. We may suspend or terminate
             access for material breach, non-payment, security risk, unlawful
             activity, or harm to the service or others. Where practical, we will
             provide notice and an opportunity to resolve the issue.
@@ -151,8 +152,8 @@ export default function Terms() {
         <section>
           <h2>10. Disclaimers and liability</h2>
           <p>
-            To the extent permitted by law, Restro is provided “as is” and
-            without implied warranties. Restro is an operations tool and does
+            To the extent permitted by law, {site.brandName} is provided “as is” and
+            without implied warranties. {site.brandName} is an operations tool and does
             not provide legal, tax, accounting, employment, or food-safety
             advice.
           </p>
@@ -180,13 +181,13 @@ export default function Terms() {
           <h2>12. Contact</h2>
           <p>
             Questions about these terms can be sent to{" "}
-            <a href="mailto:legal@restro.com">legal@restro.com</a>.
+            <a href={`mailto:${site.supportEmail}`}>{site.supportEmail}</a>.
           </p>
         </section>
       </article>
 
       <footer className="legal-footer">
-        <span>© {new Date().getFullYear()} Restro</span>
+        <span>© {new Date().getFullYear()} {site.legalName}</span>
         <div><Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link></div>
       </footer>
     </main>

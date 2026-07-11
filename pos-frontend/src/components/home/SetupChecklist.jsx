@@ -98,11 +98,19 @@ const SetupChecklist = () => {
       cta: "Invite staff",
     },
     {
+      id: "inventory",
+      label: "Link inventory to your menu",
+      done: false, // can't easily detect without inventory API here — show as ongoing goal
+      sub: "Track stock levels so you never run out mid-service",
+      action: () => navigate("/app/dashboard"),
+      cta: "Set up inventory",
+    },
+    {
       id: "orders",
       label: "Take your first order",
       done: orders.length > 0,
       sub: orders.length > 0 ? "First order taken — you're live! 🎉" : "Everything is ready — take your first order",
-      action: null, // triggered via the Create Order flow
+      action: null,
       cta: null,
     },
   ];
@@ -134,12 +142,12 @@ const SetupChecklist = () => {
           </span>
           <div>
             <h2>
-              {allDone ? "You're all set! 🎉" : "Complete your setup"}
+              {allDone ? "You're all set! 🎉" : `Your POS is ${pct}% ready`}
             </h2>
             <p>
               {allDone
                 ? "Your restaurant is fully configured and live."
-                : `${completedCount} of ${steps.length} steps done`}
+                : `${completedCount} of ${steps.length} steps complete — finish setup to go fully live`}
             </p>
           </div>
         </div>

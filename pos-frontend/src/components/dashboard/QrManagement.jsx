@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import "../../styles/qr-management.css";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 import { enqueueSnackbar } from "notistack";

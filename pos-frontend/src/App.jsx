@@ -5,10 +5,9 @@ import {
   Routes,
   useLocation,
 } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useSelector } from "react-redux";
 import useLoadData from "./hooks/useLoadData";
-import useRealtimeSync from "./hooks/useRealtimeSync";
 import FullScreenLoader from "./components/shared/FullScreenLoader";
 import {
   ProtectedRoute,
@@ -20,6 +19,13 @@ import { ROLES } from "./constants/roles";
 import { APP_ROUTES } from "./utils/authRouting";
 import Landing from "./pages/Landing";
 import logo from "./assets/images/logo.png";
+import {
+  getSeoPageByPath,
+  getSeoPagePath,
+  getSeoPagesByType,
+} from "./content/seoContent";
+import { SeoDetailPage, SeoIndexPage } from "./pages/SeoContent";
+import { site } from "./config/site";
 
 const Home = lazy(() => import("./pages/Home"));
 const DashboardFrame = lazy(() => import("./components/shared/DashboardFrame"));
@@ -41,14 +47,18 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const RealtimeSyncBridge = lazy(
+  () => import("./components/shared/RealtimeSyncBridge"),
+);
 
 const MANAGEMENT = ["OWNER", "MANAGER"];
 const ORDER_ACCESS = ["OWNER", "MANAGER", "CASHIER", "WAITER"];
 const TABLE_ACCESS = ["OWNER", "MANAGER", "CASHIER", "WAITER"];
 
-const RouteLoader = ({ label = "Loading Restro…" }) => (
+const RouteLoader = ({ label = `Loading ${site.brandName}…` }) => (
   <main className="oauth-callback" role="status" aria-live="polite">
-    <img src={logo} alt="Restro" />
+    <img src={logo} alt={site.brandName} />
     <div className="oauth-spinner" aria-hidden="true" />
     <h1>{label}</h1>
   </main>
@@ -56,8 +66,8 @@ const RouteLoader = ({ label = "Loading Restro…" }) => (
 
 const BootstrapError = ({ onRetry, isAppRoute }) => (
   <main className="oauth-callback" role="alert">
-    <img src={logo} alt="Restro" />
-    <h1>We couldn&apos;t reach Restro</h1>
+    <img src={logo} alt={site.brandName} />
+    <h1>We couldn&apos;t reach {site.brandName}</h1>
     <p>Check your connection and try again.</p>
     <button className="auth-submit" type="button" onClick={onRetry}>
       Try again
@@ -85,6 +95,26 @@ const legacyRedirects = [
   ["/platform", APP_ROUTES.platform],
 ];
 
+const topLevelSeoPaths = [
+  ...getSeoPagesByType("landing"),
+  ...getSeoPagesByType("city"),
+].map(getSeoPagePath);
+
+function SeoContentRoute() {
+  const { pathname } = useLocation();
+  return <SeoDetailPage page={getSeoPageByPath(pathname)} />;
+}
+
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [pathname, search]);
+
+  return null;
+}
+
 function Layout() {
   const location = useLocation();
   const { pathname } = location;
@@ -94,7 +124,6 @@ function Layout() {
   const bootstrap = useLoadData({
     enabled: isAppRoute || isAuthRoute,
   });
-  useRealtimeSync();
   const user = useSelector((state) => state.user);
 
   if (isAppRoute && bootstrap.isLoading) return <FullScreenLoader />;
@@ -112,6 +141,7 @@ function Layout() {
 
   return (
     <Suspense fallback={fallback}>
+      {isAppRoute && <RealtimeSyncBridge />}
       {isAppRoute && user.isAuth && user.mustChangePassword ? (
         <ChangePasswordModal />
       ) : (
@@ -120,6 +150,14 @@ function Layout() {
           <Route path="/qr/:slug" element={<QrMenu />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/blog" element={<SeoIndexPage type="blog" />} />
+          <Route path="/blog/:slug" element={<SeoContentRoute />} />
+          <Route path="/resources" element={<SeoIndexPage type="resource" />} />
+          <Route path="/resources/:slug" element={<SeoContentRoute />} />
+          <Route path="/compare/:slug" element={<SeoContentRoute />} />
+          {topLevelSeoPaths.map((path) => (
+            <Route key={path} path={path} element={<SeoContentRoute />} />
+          ))}
 
           <Route
             path="/auth"
@@ -288,7 +326,7 @@ function Layout() {
               isAppRoute ? (
                 <Navigate to={APP_ROUTES.home} replace />
               ) : (
-                <Navigate to="/" replace />
+                <NotFound />
               )
             }
           />
@@ -301,6 +339,7 @@ function Layout() {
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <Layout />
     </Router>
   );

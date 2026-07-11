@@ -14,6 +14,12 @@ export default [
         ...globals.browser,
         __PUBLIC_SITE_URL__: "readonly",
         __SEO_INDEXING_ENABLED__: "readonly",
+        __BRAND_NAME__: "readonly",
+        __LEGAL_NAME__: "readonly",
+        __SUPPORT_EMAIL__: "readonly",
+        __PRIVACY_EMAIL__: "readonly",
+        __DEFAULT_OG_IMAGE__: "readonly",
+        __SOCIAL_LINKS__: "readonly",
       },
       parserOptions: {
         ecmaVersion: "latest",

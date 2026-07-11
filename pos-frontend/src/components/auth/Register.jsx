@@ -8,6 +8,7 @@ import { setUser } from "../../redux/slices/userSlice";
 import { ROLES } from "../../constants/roles";
 import GoogleAuthButton from "./GoogleAuthButton";
 import { APP_ROUTES } from "../../utils/authRouting";
+import { trackMarketingEvent } from "../../utils/marketingAnalytics";
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -23,6 +24,7 @@ export default function Register() {
   const registerMutation = useMutation({
     mutationFn: register,
     onSuccess: async () => {
+      trackMarketingEvent("sign_up_complete", { method: "email" });
       queryClient.clear();
       const { data } = await getUserData();
       dispatch(setUser(data.data));

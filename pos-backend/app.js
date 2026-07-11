@@ -160,6 +160,8 @@ app.use("/api/qr",         require("./routes/qrRoute"));
 app.use("/api/export",     require("./routes/exportRoute"));
 app.use("/api/analytics",  require("./routes/analyticsRoute"));
 app.use("/api/reservations", require("./routes/reservationRoute"));
+app.use("/api/tax-groups", require("./routes/taxGroupRoute"));
+app.use("/api/analytics/gstr", require("./routes/gstrRoute"));
 
 app.use((_req, _res, next) => {
   next(Object.assign(new Error("Route not found"), { statusCode: 404 }));

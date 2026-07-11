@@ -72,6 +72,11 @@ router.post(
         .array(orderItemInput)
         .min(1)
         .max(100),
+      // Optional discount — all roles can apply
+      discount: z.object({
+        type: z.enum(["FLAT", "PERCENT"]),
+        value: z.coerce.number().min(0.01).max(1000000),
+      }).optional(),
     }).superRefine((data, context) => {
       if (
         data.orderType === "DINE_IN" &&

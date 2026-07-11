@@ -6,6 +6,7 @@ import {
   getPublicUrl,
   seoIndexingEnabled,
   seoRobots,
+  site,
 } from "../config/site";
 
 const EFFECTIVE_DATE = "July 4, 2026";
@@ -14,10 +15,10 @@ export default function Privacy() {
   return (
     <main className="legal-page">
       <Helmet>
-        <title>Privacy Policy | Restro</title>
+        <title>{`Privacy Policy | ${site.brandName}`}</title>
         <meta
           name="description"
-          content="Learn how Restro collects, uses, protects, and shares personal information."
+          content={`Learn how ${site.brandName} collects, uses, protects, and shares personal information.`}
         />
         <meta name="robots" content={seoRobots} />
         {seoIndexingEnabled && (
@@ -27,7 +28,7 @@ export default function Privacy() {
       <nav className="legal-nav">
         <Link className="marketing-brand" to="/">
           <img src={logo} alt="" />
-          <span>Restro</span>
+          <span>{site.brandName}</span>
         </Link>
         <Link className="legal-back" to="/">
           <HiArrowLeft /> Back to home
@@ -42,7 +43,7 @@ export default function Privacy() {
         </header>
 
         <div className="legal-intro">
-          This policy explains what information Restro collects, why we use it,
+          This policy explains what information {site.brandName} collects, why we use it,
           how it is shared, and the choices available to you.
         </div>
 
@@ -56,7 +57,7 @@ export default function Privacy() {
           </p>
           <h3>Operational information</h3>
           <p>
-            When you use Restro, we process menu, order, table, inventory,
+            When you use {site.brandName}, we process menu, order, table, inventory,
             supplier, payment-status, receipt, staff, and reporting data entered
             by authorized users.
           </p>
@@ -71,7 +72,7 @@ export default function Privacy() {
         <section>
           <h2>2. How we use information</h2>
           <ul>
-            <li>provide, maintain, and secure the Restro service;</li>
+            <li>provide, maintain, and secure the {site.brandName} service;</li>
             <li>authenticate users and enforce role-based permissions;</li>
             <li>process restaurant workflows and requested integrations;</li>
             <li>provide support and communicate service information;</li>
@@ -111,7 +112,7 @@ export default function Privacy() {
           <p>
             If you register with Google, we receive basic account information
             authorized by you, typically your name, email address, profile image,
-            and verification status. We use it to create and secure your Restro
+            and verification status. We use it to create and secure your {site.brandName}
             account. Google&apos;s handling of information is governed by its own
             privacy policy.
           </p>
@@ -120,7 +121,7 @@ export default function Privacy() {
         <section>
           <h2>6. Cookies and similar technologies</h2>
           <p>
-            Restro uses essential cookies to maintain secure sessions, remember
+            {site.brandName} uses essential cookies to maintain secure sessions, remember
             preferences, and protect accounts. We may use limited analytics
             technologies to understand service performance. Browser settings can
             control cookies, but blocking essential cookies may prevent sign-in.
@@ -170,7 +171,7 @@ export default function Privacy() {
         <section>
           <h2>11. Children&apos;s privacy</h2>
           <p>
-            Restro is a business service and is not directed to children. We do
+            {site.brandName} is a business service and is not directed to children. We do
             not knowingly collect personal information from children through
             account registration.
           </p>
@@ -190,13 +191,13 @@ export default function Privacy() {
           <h2>13. Contact us</h2>
           <p>
             Privacy questions and rights requests can be sent to{" "}
-            <a href="mailto:privacy@restro.com">privacy@restro.com</a>.
+            <a href={`mailto:${site.privacyEmail}`}>{site.privacyEmail}</a>.
           </p>
         </section>
       </article>
 
       <footer className="legal-footer">
-        <span>© {new Date().getFullYear()} Restro</span>
+        <span>© {new Date().getFullYear()} {site.legalName}</span>
         <div><Link to="/terms">Terms</Link><Link to="/privacy">Privacy</Link></div>
       </footer>
     </main>

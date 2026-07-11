@@ -4,6 +4,7 @@ const { sendEmail } = require("../config/email");
 const { writeAudit } = require("../utils/audit");
 const { getIo } = require("../config/socket");
 const { generateReferralCode } = require("./referralController");
+const { seedDefaultTaxGroups } = require("./taxGroupController");
 
 const getAllRestaurants = async (req, res, next) => {
   try {
@@ -80,6 +81,13 @@ const updateRestaurantStatus = async (req, res, next) => {
     await writeAudit(req, `RESTAURANT_${status}`, "Restaurant", restaurant.id, {
       rejectionReason,
     });
+
+    // ── Auto-seed default tax groups on first approval ────────────────────────
+    if (status === "APPROVED") {
+      seedDefaultTaxGroups(restaurant.id).catch((err) =>
+        console.error("Failed to seed default tax groups:", err.message)
+      );
+    }
 
     // ── Referral reward logic: fires only on APPROVED ─────────────────────────
     if (status === "APPROVED" && restaurant.referredById) {

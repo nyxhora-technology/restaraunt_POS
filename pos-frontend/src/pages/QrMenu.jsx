@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
+import "../styles/qr-menu.css";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {

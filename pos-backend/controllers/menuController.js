@@ -16,7 +16,8 @@ const getMenu = async (req, res, next) => {
           include: {
             variants: {
               orderBy: { sortOrder: "asc" }
-            }
+            },
+            taxGroup: true,  // include tax profile for billing + UI
           },
           orderBy: { name: "asc" }
         }

@@ -12,6 +12,12 @@ export const register = ({ name, email, password, phone }) =>
   });
 export const getSession = (config) =>
   axiosWrapper.get("/api/auth/get-session", config);
+export const listSessions = () =>
+  axiosWrapper.get("/api/restaurant/security/sessions");
+export const revokeSession = (sessionId) =>
+  axiosWrapper.delete(`/api/restaurant/security/sessions/${sessionId}`);
+export const revokeOtherSessions = () =>
+  axiosWrapper.delete("/api/restaurant/security/sessions/other");
 export const getAuthCapabilities = (config) =>
   axiosWrapper.get("/api/config/auth", config);
 export const signInWithGoogle = async ({
@@ -219,6 +225,24 @@ export const updateRestaurantPlan = ({ restaurantId, plan }) =>
 export const getMyReferrals = () => axiosWrapper.get("/api/referral/me");
 export const validateReferralCode = (code) =>
   axiosWrapper.get(`/api/referral/validate/${encodeURIComponent(code)}`);
+
+// Tax Group Endpoints
+export const getTaxGroups = () => axiosWrapper.get("/api/tax-groups");
+export const getStatePresets = () => axiosWrapper.get("/api/tax-groups/state-presets");
+export const createTaxGroup = (data) => axiosWrapper.post("/api/tax-groups", data);
+export const updateTaxGroup = ({ id, ...data }) =>
+  axiosWrapper.put(`/api/tax-groups/${id}`, data);
+export const deleteTaxGroup = (id) => axiosWrapper.delete(`/api/tax-groups/${id}`);
+export const seedDefaultTaxGroups = () =>
+  axiosWrapper.post("/api/tax-groups/seed-defaults");
+
+// GSTR / Tax Report Endpoints
+export const getGstrSummary = (month) =>
+  axiosWrapper.get("/api/analytics/gstr", { params: { month } });
+export const downloadGstrJson = (month) =>
+  axiosWrapper.get("/api/analytics/gstr/json", { params: { month }, responseType: "blob" });
+export const downloadGstrCsv = (month) =>
+  axiosWrapper.get("/api/analytics/gstr/csv", { params: { month }, responseType: "blob" });
 
 export const getErrorMessage = (error, fallback = "Something went wrong") =>
   error?.response?.data?.message || error?.message || fallback;

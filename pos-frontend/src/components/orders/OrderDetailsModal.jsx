@@ -92,8 +92,18 @@ const OrderDetailsModal = ({ order: initialOrder, onClose }) => {
     (acc, item) => acc + Number(item.price || 0) * item.quantity,
     0,
   );
-  const previewTax = (previewSubtotal * Number(order.taxRate || 0)) / 100;
-  const previewTotal = previewSubtotal + previewTax;
+
+  // Live tax preview — uses per-item snapshot data from the existing order items.
+  // When items are edited (quantities changed / items added), the exact tax won't
+  // be available until the server recalculates on save. We show the order's
+  // server-computed breakdown for the committed state.
+  const previewCgst = Number(order.cgstTotal || 0);
+  const previewSgst = Number(order.sgstTotal || 0);
+  const previewIgst = Number(order.igstTotal || 0);
+  const previewVat = Number(order.vatTotal || 0);
+  const previewTaxTotal = Number(order.taxTotal || order.tax || 0);
+  const previewDiscount = Number(order.discountAmt || 0);
+  const previewTotal = Number(order.totalWithTax || 0);
   const menuQuery = useQuery({
     queryKey: ["menu"],
     queryFn: getMenu,
@@ -503,21 +513,58 @@ const OrderDetailsModal = ({ order: initialOrder, onClose }) => {
               <div>
                 <span>Subtotal</span>
                 <strong>
-                  {"\u20B9"}
+                  {"₹"}
                   {previewSubtotal.toFixed(2)}
                 </strong>
               </div>
-              <div>
-                <span>Tax ({order.taxRate}%)</span>
-                <strong>
-                  {"\u20B9"}
-                  {previewTax.toFixed(2)}
-                </strong>
-              </div>
+              {previewDiscount > 0 && (
+                <div style={{ color: "var(--dash-success, #22c55e)" }}>
+                  <span>
+                    Discount
+                    {order.discountType === "PERCENT"
+                      ? ` (${order.discountValue}%)`
+                      : order.discountType === "FLAT"
+                      ? " (Flat)"
+                      : ""}
+                  </span>
+                  <strong>-₹{previewDiscount.toFixed(2)}</strong>
+                </div>
+              )}
+              {previewCgst > 0 && (
+                <div>
+                  <span>CGST</span>
+                  <strong>₹{previewCgst.toFixed(2)}</strong>
+                </div>
+              )}
+              {previewSgst > 0 && (
+                <div>
+                  <span>SGST</span>
+                  <strong>₹{previewSgst.toFixed(2)}</strong>
+                </div>
+              )}
+              {previewIgst > 0 && (
+                <div>
+                  <span>IGST</span>
+                  <strong>₹{previewIgst.toFixed(2)}</strong>
+                </div>
+              )}
+              {previewVat > 0 && (
+                <div>
+                  <span>VAT (Alcohol/Excise)</span>
+                  <strong>₹{previewVat.toFixed(2)}</strong>
+                </div>
+              )}
+              {/* Legacy fallback for old orders */}
+              {previewTaxTotal > 0 && previewCgst === 0 && previewVat === 0 && (
+                <div>
+                  <span>Tax ({order.taxRate || 0}%)</span>
+                  <strong>₹{previewTaxTotal.toFixed(2)}</strong>
+                </div>
+              )}
               <div>
                 <span>Total</span>
                 <strong>
-                  {"\u20B9"}
+                  {"₹"}
                   {previewTotal.toFixed(2)}
                 </strong>
               </div>

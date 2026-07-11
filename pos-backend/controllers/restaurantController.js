@@ -153,7 +153,7 @@ const updateMyRestaurant = async (req, res, next) => {
     // SECURITY: Explicitly allowlist updatable fields to prevent mass assignment.
     // Fields like status, plan, slug, ownerId, restaurantId must never be
     // writable by the restaurant owner through this endpoint.
-    const { name, address, city, phone, email, description, logo, currency, timezone } = req.body;
+    const { name, address, city, phone, email, description, logo, currency, timezone, gstin, stateCode } = req.body;
     const safeData = {};
     if (name !== undefined) safeData.name = name;
     if (address !== undefined) safeData.address = address;
@@ -164,6 +164,17 @@ const updateMyRestaurant = async (req, res, next) => {
     if (logo !== undefined) safeData.logo = logo;
     if (currency !== undefined) safeData.currency = currency;
     if (timezone !== undefined) safeData.timezone = timezone;
+    if (gstin !== undefined) {
+      const g = (gstin || "").trim().toUpperCase();
+      if (g.length > 0 && g.length !== 15) {
+        return res.status(400).json({ success: false, message: "GSTIN must be exactly 15 characters (e.g. 27AABCU9603R1ZX)" });
+      }
+      if (g.length === 15 && !/^[0-9A-Z]{15}$/.test(g)) {
+        return res.status(400).json({ success: false, message: "GSTIN can only contain digits and uppercase letters" });
+      }
+      safeData.gstin = g.length > 0 ? g : null;
+    }
+    if (stateCode !== undefined) safeData.stateCode = stateCode || null;
 
     const restaurant = await prisma.restaurant.update({
       where: { id: req.restaurantId },
@@ -415,6 +426,81 @@ const changeFirstPassword = async (req, res, next) => {
   }
 };
 
+const listMySessions = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const sessions = await prisma.session.findMany({
+      where: {
+        userId: req.user.id,
+        expiresAt: { gt: now },
+      },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        userId: true,
+        ipAddress: true,
+        userAgent: true,
+        createdAt: true,
+        updatedAt: true,
+        expiresAt: true,
+        token: true,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: sessions.map(({ token, ...session }) => ({
+        ...session,
+        isCurrent: token === req.session?.token,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const revokeMySession = async (req, res, next) => {
+  try {
+    const session = await prisma.session.findFirst({
+      where: {
+        id: req.params.sessionId,
+        userId: req.user.id,
+      },
+      select: { id: true, token: true },
+    });
+
+    if (!session) throw createHttpError(404, "Session not found");
+    if (session.token === req.session?.token) {
+      throw createHttpError(400, "Use sign out to end your current session");
+    }
+
+    await prisma.session.delete({ where: { id: session.id } });
+    res.json({ success: true, message: "Session revoked" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const revokeOtherMySessions = async (req, res, next) => {
+  try {
+    const result = await prisma.session.deleteMany({
+      where: {
+        userId: req.user.id,
+        expiresAt: { gt: new Date() },
+        token: { not: req.session?.token || "" },
+      },
+    });
+
+    res.json({
+      success: true,
+      data: { revoked: result.count },
+      message: "Other sessions revoked",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 
 module.exports = {
   registerRestaurant,
@@ -425,4 +511,7 @@ module.exports = {
   resetStaffPassword,
   removeStaff,
   changeFirstPassword,
+  listMySessions,
+  revokeMySession,
+  revokeOtherMySessions,
 };

@@ -6,6 +6,7 @@ import restaurant from "../assets/images/restro_image.png";
 import logo from "../assets/images/logo.png";
 import Register from "../components/auth/Register";
 import Login from "../components/auth/Login";
+import { site } from "../config/site";
 
 export default function Auth() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -31,15 +32,17 @@ export default function Auth() {
     <main className="auth-page">
       <Helmet>
         <title>
-          {isRegister ? "Create your Restro account" : "Sign in to Restro"} —
+          {isRegister
+            ? `Create your ${site.brandName} account`
+            : `Sign in to ${site.brandName}`} —
           Free Restaurant POS
         </title>
         <meta
           name="description"
           content={
             isRegister
-              ? "Create your free Restro account. Start taking orders, managing tables, and running your restaurant in minutes."
-              : "Sign in to your Restro restaurant workspace."
+              ? `Create your free ${site.brandName} account and configure a restaurant workspace.`
+              : `Sign in to your ${site.brandName} restaurant workspace.`
           }
         />
         <meta name="robots" content="noindex" />
@@ -48,7 +51,7 @@ export default function Auth() {
         <img src={restaurant} alt="A busy modern restaurant dining room" />
         <div className="auth-visual-overlay" />
         <Link to="/" className="auth-back">
-          <HiArrowLeft /> Back to Restro
+          <HiArrowLeft /> Back to {site.brandName}
         </Link>
         <div className="auth-visual-copy">
           <span>Restaurant operations, refined.</span>
@@ -71,7 +74,7 @@ export default function Auth() {
         <div className="auth-card">
           <Link className="auth-brand" to="/">
             <img src={logo} alt="" />
-            <strong>Restro</strong>
+            <strong>{site.brandName}</strong>
           </Link>
           <div className="auth-tabs" role="tablist" aria-label="Account access">
             <button
@@ -109,14 +112,14 @@ export default function Auth() {
           {isRegister ? <Register /> : <Login />}
           <p className="auth-switch">
             {isRegister
-              ? "Already use Restro?"
+              ? `Already use ${site.brandName}?`
               : "Setting up a new restaurant?"}
             <button onClick={() => switchMode(!isRegister)}>
               {isRegister ? "Sign in" : "Create an account"}
             </button>
           </p>
           <p className="auth-legal">
-            By continuing, you agree to Restro&apos;s{" "}
+            By continuing, you agree to {site.brandName}&apos;s{" "}
             <Link to="/terms">Terms of Service</Link> and{" "}
             <Link to="/privacy">Privacy Policy</Link>.
           </p>

@@ -7,16 +7,27 @@ import {
   addMenuItem,
   getErrorMessage,
   getMenu,
+  getTaxGroups,
   updateCategory,
   updateMenuItem,
 } from "../../https";
 import CustomSelect from "../shared/CustomSelect";
 
+// Tax type badge colours
+const TAX_TYPE_COLOR = {
+  GST:      { color: "#0f9fa4", bg: "#e0f7fa" },
+  VAT:      { color: "#7c3aed", bg: "#f3e8ff" },
+  INCLUDED: { color: "#d97706", bg: "#fef3c7" },
+  EXEMPT:   { color: "#16a34a", bg: "#dcfce7" },
+};
+
 const MenuModal = ({ action, onClose, record }) => {
   const queryClient = useQueryClient();
   const menuQuery = useQuery({ queryKey: ["menu"], queryFn: getMenu });
+  const taxGroupsQuery = useQuery({ queryKey: ["tax-groups"], queryFn: getTaxGroups });
   const isCategory = action.includes("category");
   const isEdit = action.startsWith("edit");
+
   const [form, setForm] = useState({
     name: record?.name || "",
     price: record?.price || "",
@@ -27,7 +38,19 @@ const MenuModal = ({ action, onClose, record }) => {
     available: record?.available ?? true,
     sortOrder: record?.sortOrder || 0,
     variants: record?.variants || [],
+    // Tax fields
+    taxGroupId: record?.taxGroupId || "",
+    isMrpItem: record?.isMrpItem ?? false,
+    hsnCode: record?.hsnCode || "",
   });
+
+  // Auto-select the default tax group for new items
+  useEffect(() => {
+    if (isEdit || form.taxGroupId) return;
+    const groups = taxGroupsQuery.data?.data?.data || [];
+    const defaultGroup = groups.find((g) => g.isDefault);
+    if (defaultGroup) setForm((f) => ({ ...f, taxGroupId: defaultGroup.id }));
+  }, [taxGroupsQuery.data, isEdit]);
 
   useEffect(() => {
     const closeOnEscape = (event) => {
@@ -66,14 +89,15 @@ const MenuModal = ({ action, onClose, record }) => {
         ? { name: form.name, sortOrder: Number(form.sortOrder) }
         : {
             name: form.name,
-            // When variants are present, price is not needed — variants carry their own prices.
-            // We omit it (undefined) instead of sending 0 to avoid validation confusion.
             price: form.variants.length > 0 ? undefined : Number(form.price),
             categoryId: form.categoryId,
             description: form.description || undefined,
             image: form.image || undefined,
             isVeg: form.isVeg,
             available: form.available,
+            taxGroupId: form.taxGroupId || undefined,
+            isMrpItem: form.isMrpItem,
+            hsnCode: form.hsnCode || undefined,
             variants:
               form.variants.length > 0
                 ? form.variants.map((v, idx) => ({
@@ -85,6 +109,23 @@ const MenuModal = ({ action, onClose, record }) => {
                 : undefined,
           },
     );
+  };
+
+  // Derived helpers
+  const taxGroups = taxGroupsQuery.data?.data?.data || [];
+  const selectedTaxGroup = taxGroups.find((g) => g.id === form.taxGroupId);
+  const selectedMeta = selectedTaxGroup
+    ? TAX_TYPE_COLOR[selectedTaxGroup.type] || TAX_TYPE_COLOR.EXEMPT
+    : null;
+
+  const taxSummary = () => {
+    if (!selectedTaxGroup) return null;
+    const t = selectedTaxGroup;
+    if (t.type === "GST") return `CGST ${t.cgst}% + SGST ${t.sgst}% = ${t.cgst + t.sgst}% GST`;
+    if (t.type === "VAT") return `VAT ${t.vatRate}%${t.stateName ? ` · ${t.stateName}` : ""}`;
+    if (t.type === "INCLUDED") return `Tax incl. in price · CGST ${t.cgst}% + SGST ${t.sgst}%`;
+    if (t.type === "EXEMPT") return "No tax applied";
+    return null;
   };
 
   return (
@@ -99,7 +140,7 @@ const MenuModal = ({ action, onClose, record }) => {
     >
       <form
         onSubmit={submit}
-        className="dashboard-detail-modal p-6 rounded-lg w-[460px]"
+        className="dashboard-detail-modal p-6 rounded-lg w-[480px] max-h-[90vh] overflow-y-auto"
       >
         <div className="flex justify-between mb-6">
           <h2 className="text-xl font-semibold">
@@ -135,7 +176,7 @@ const MenuModal = ({ action, onClose, record }) => {
                 onChange={(event) =>
                   setForm({ ...form, price: event.target.value })
                 }
-                placeholder="Base Price"
+                placeholder={form.isMrpItem ? "MRP (tax-inclusive price)" : "Base Price (excl. tax)"}
                 type="number"
                 min="0.01"
                 step="0.01"
@@ -155,8 +196,8 @@ const MenuModal = ({ action, onClose, record }) => {
                 { value: "", label: "Select category" },
                 ...(menuQuery.data?.data.data || []).map((category) => ({
                   value: category.id,
-                  label: category.name
-                }))
+                  label: category.name,
+                })),
               ]}
             />
             <textarea
@@ -176,6 +217,114 @@ const MenuModal = ({ action, onClose, record }) => {
               type="url"
               className="dashboard-form-control w-full p-4 rounded-lg mb-3 focus:outline-none"
             />
+
+            {/* ── Tax Group Section ─────────────────────────────── */}
+            <div
+              style={{
+                borderRadius: 10,
+                border: "1px solid var(--dash-border, #e2e8f0)",
+                padding: "14px 16px",
+                marginBottom: 12,
+                background: "var(--dash-surface-2, #f8fafc)",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "var(--dash-muted)",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  marginBottom: 10,
+                }}
+              >
+                Tax Configuration
+              </p>
+
+              {/* Tax Group Selector */}
+              <CustomSelect
+                className="w-full mb-2"
+                name="taxGroupId"
+                value={form.taxGroupId}
+                onChange={(e) => setForm({ ...form, taxGroupId: e.target.value })}
+                options={[
+                  { value: "", label: taxGroupsQuery.isLoading ? "Loading tax groups..." : "No tax group (Exempt)" },
+                  ...taxGroups.map((g) => ({
+                    value: g.id,
+                    label: `${g.name}${g.isDefault ? " ★" : ""}`,
+                  })),
+                ]}
+              />
+
+              {/* Tax summary badge */}
+              {selectedTaxGroup && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: selectedMeta.color,
+                      background: selectedMeta.bg,
+                      borderRadius: 5,
+                      padding: "2px 7px",
+                    }}
+                  >
+                    {selectedTaxGroup.type}
+                  </span>
+                  <span style={{ fontSize: 12, color: "var(--dash-muted)" }}>
+                    {taxSummary()}
+                  </span>
+                </div>
+              )}
+
+              {/* MRP Item toggle — only relevant for INCLUDED type */}
+              {selectedTaxGroup?.type === "INCLUDED" && (
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    marginBottom: 8,
+                    fontSize: 13,
+                    color: "var(--dash-text)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={form.isMrpItem}
+                    onChange={(e) => setForm({ ...form, isMrpItem: e.target.checked })}
+                    style={{ width: 15, height: 15, accentColor: "#d97706" }}
+                  />
+                  <span>
+                    <strong>MRP Item</strong> — price entered above is the printed MRP (tax already inside)
+                  </span>
+                </label>
+              )}
+
+              {/* HSN/SAC code override */}
+              <input
+                value={form.hsnCode}
+                onChange={(e) => setForm({ ...form, hsnCode: e.target.value })}
+                placeholder={`HSN/SAC code${selectedTaxGroup?.hsnSacCode ? ` (group default: ${selectedTaxGroup.hsnSacCode})` : " (optional)"}`}
+                className="dashboard-form-control w-full p-3 rounded-lg focus:outline-none"
+                style={{ fontSize: 13 }}
+              />
+              {!selectedTaxGroup && (
+                <p style={{ fontSize: 11, color: "var(--dash-muted)", marginTop: 6 }}>
+                  Go to <strong>Settings → Tax Groups</strong> to create groups, then assign them here.
+                </p>
+              )}
+            </div>
+            {/* ── end Tax Group ─────────────────────────────────── */}
+
             <div className="flex gap-6 mb-4 text-[var(--dash-muted)]">
               <label className="flex gap-2">
                 <input

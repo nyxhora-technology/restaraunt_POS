@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { getOrderUsage } from "../../https";
 import { MdArrowForward, MdRocketLaunch } from "react-icons/md";
+import UpgradeModal from "../shared/UpgradeModal";
 
 /**
  * PlanUsageBar — shown on the dashboard for OWNER/MANAGER roles.
@@ -20,6 +21,7 @@ import { MdArrowForward, MdRocketLaunch } from "react-icons/md";
 const PlanUsageBar = () => {
   const navigate = useNavigate();
   const user = useSelector((s) => s.user);
+  const [modalOpen, setModalOpen] = useState(false);
 
   // Only show for owners/managers on tenant restaurants
   const eligible =
@@ -47,23 +49,31 @@ const PlanUsageBar = () => {
   else if (percentage >= 70) tier = "warn";
 
   const isAtLimit = ordersThisMonth >= limit;
+  const remaining = limit - ordersThisMonth;
+
+  // Calculate first day of next month for reset message
+  const nextReset = new Date();
+  nextReset.setMonth(nextReset.getMonth() + 1, 1);
+  const resetDateStr = nextReset.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
   return (
     <div className={`plan-usage-bar tier-${tier}`} role="status" aria-label="Monthly order usage">
       <div className="plan-usage-left">
         <span className="plan-usage-icon">
-          {isAtLimit ? "🚫" : percentage >= 70 ? "⚠️" : "📊"}
+          {isAtLimit ? "⛔" : percentage >= 70 ? "⚠️" : "📊"}
         </span>
         <div className="plan-usage-text">
           <strong>
             {isAtLimit
-              ? "Order limit reached"
+              ? "New orders are blocked — your restaurant is offline for ordering"
               : `${ordersThisMonth} of ${limit} orders used this month`}
           </strong>
           <span className="plan-usage-sub">
             {isAtLimit
-              ? "Upgrade to Professional for unlimited orders"
-              : `${limit - ordersThisMonth} remaining · ${plan} plan`}
+              ? `Upgrade now to restore service · resets ${resetDateStr} otherwise`
+              : percentage >= 90
+              ? `Only ${remaining} order${remaining !== 1 ? "s" : ""} left — service blocks at ${limit}`
+              : `${remaining} remaining · ${plan} plan`}
           </span>
         </div>
       </div>
@@ -72,25 +82,30 @@ const PlanUsageBar = () => {
         <div className="plan-usage-track" aria-label={`${percentage}% used`}>
           <div
             className="plan-usage-fill"
-            style={{ width: `${percentage}%` }}
+            style={{ width: `${Math.min(percentage, 100)}%` }}
             role="progressbar"
             aria-valuenow={percentage}
             aria-valuemax={100}
           />
         </div>
-        <span className="plan-usage-pct">{percentage}%</span>
+        <span className="plan-usage-pct">{Math.min(percentage, 100)}%</span>
 
         {percentage >= 70 && (
-          <button
-            type="button"
-            className="plan-usage-cta"
-            onClick={() => navigate("/app/settings")}
-          >
-            <MdRocketLaunch />
-            Upgrade <MdArrowForward />
-          </button>
+          <div className="plan-usage-cta-wrap">
+            <button
+              type="button"
+              className="plan-usage-cta"
+              onClick={() => setModalOpen(true)}
+              title="Professional is ~₹83/day"
+            >
+              <MdRocketLaunch />
+              {isAtLimit ? "Restore service" : "Protect service"} <MdArrowForward />
+            </button>
+            <span className="plan-usage-price-anchor">₹83/day</span>
+          </div>
         )}
       </div>
+      {modalOpen && <UpgradeModal onClose={() => setModalOpen(false)} />}
     </div>
   );
 };

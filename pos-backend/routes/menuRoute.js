@@ -29,6 +29,12 @@ const menuItemBase = z.object({
   isVeg: z.boolean().default(true),
   categoryId: z.string().min(1),
   variants: z.array(variant).max(50).optional(),
+  // Tax fields
+  taxGroupId: z.string().min(1).optional().nullable(),
+  isMrpItem: z.boolean().optional().default(false),
+  mrp: z.coerce.number().min(0).max(1000000).optional().nullable(),
+  hsnCode: z.string().trim().max(20).optional().nullable(),
+  sacCode: z.string().trim().max(20).optional().nullable(),
 });
 
 // Create schema adds the price-vs-variants cross-field check

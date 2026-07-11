@@ -3,6 +3,7 @@ const createHttpError = require("http-errors");
 const { getStartOfDay, getStartOfMonth, getStartOfYesterday, dayjs } = require("../utils/dateUtils");
 const { getIo } = require("../config/socket");
 const { writeAudit } = require("../utils/audit");
+const { calcOrderTotals } = require("../utils/taxCalc");
 const {
   processOrderConsumption,
   reverseOrderConsumption,
@@ -39,6 +40,14 @@ const serializeOrderForRole = (order, role) => {
   const sanitized = { ...order };
   [
     "subtotal",
+    "cgstTotal",
+    "sgstTotal",
+    "igstTotal",
+    "vatTotal",
+    "taxTotal",
+    "discountType",
+    "discountValue",
+    "discountAmt",
     "taxRate",
     "tax",
     "totalWithTax",
@@ -48,7 +57,7 @@ const serializeOrderForRole = (order, role) => {
     "razorpayPaymentId",
     "payment",
   ].forEach((field) => delete sanitized[field]);
-  sanitized.items = (order.items || []).map(({ price, ...item }) => item);
+  sanitized.items = (order.items || []).map(({ price, cgstAmt, sgstAmt, vatAmt, taxAmt, ...item }) => item);
 
   delete sanitized.customerName;
   delete sanitized.customerPhone;
@@ -103,7 +112,7 @@ const addOrder = async (req, res, next) => {
           restaurantId: req.restaurantId,
           available: true,
         },
-        include: { variants: true },
+        include: { variants: true, taxGroup: true },
       }),
     ]);
 
@@ -194,17 +203,48 @@ const addOrder = async (req, res, next) => {
         note: item.note,
         variantId,
         variantLabel,
+        taxGroup: menuItem.taxGroup || null,  // attach for calcOrderTotals
+        hsnCode: menuItem.hsnCode || null,
+        sacCode: menuItem.sacCode || null,
+        isMrpItem: menuItem.isMrpItem || false,
       };
     });
-    const subtotal = roundMoney(
-      normalizedItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0,
-      ),
-    );
-    const taxRate = 5;
-    const tax = roundMoney((subtotal * taxRate) / 100);
-    const totalWithTax = roundMoney(subtotal + tax);
+
+    // — Discount (optional, all roles can apply) —
+    const discount = req.body.discount || null; // { type: "FLAT"|"PERCENT", value: number }
+
+    // — Per-item tax + order totals —
+    const totals = calcOrderTotals(normalizedItems, discount);
+
+    // Build the OrderItem create payloads with per-item tax snapshots
+    const orderItemsPayload = normalizedItems.map((item, idx) => {
+      const bd = totals.itemBreakdowns[idx];
+      const tg = item.taxGroup;
+      return {
+        menuItemId: item.menuItemId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        note: item.note || null,
+        variantId: item.variantId || null,
+        variantLabel: item.variantLabel || null,
+        // Tax snapshot
+        taxGroupName: tg ? tg.name : null,
+        taxType: bd.taxType,
+        cgstRate: bd.cgstRate,
+        sgstRate: bd.sgstRate,
+        igstRate: bd.igstRate,
+        vatRate: bd.vatRate,
+        cgstAmt: bd.cgstAmt,
+        sgstAmt: bd.sgstAmt,
+        igstAmt: bd.igstAmt,
+        vatAmt: bd.vatAmt,
+        taxAmt: bd.taxAmt,
+        isMrpItem: item.isMrpItem,
+        hsnCode: item.hsnCode || null,
+        sacCode: item.sacCode || null,
+      };
+    });
 
     const order = await prisma.$transaction(
       async (tx) => {
@@ -222,11 +262,17 @@ const addOrder = async (req, res, next) => {
             customerPhone,
             guests,
             kitchenNote,
-            subtotal,
-            taxRate,
-            tax,
-            totalWithTax,
-            items: { create: normalizedItems },
+            subtotal: totals.subtotal,
+            cgstTotal: totals.cgstTotal,
+            sgstTotal: totals.sgstTotal,
+            igstTotal: totals.igstTotal,
+            vatTotal: totals.vatTotal,
+            taxTotal: totals.taxTotal,
+            discountType: discount?.type || null,
+            discountValue: discount?.value ? Number(discount.value) : null,
+            discountAmt: totals.discountAmt,
+            totalWithTax: totals.totalWithTax,
+            items: { create: orderItemsPayload },
             tableAssignments: isDineIn
               ? {
                   create: requestedTableIds.map((assignedTableId) => ({
@@ -278,11 +324,12 @@ const addOrder = async (req, res, next) => {
       data: serializeOrderForRole(order, req.user.role),
     });
 
-    // Auditing is already best-effort in writeAudit. Do not delay the cashier's
-    // response by another remote database round trip.
     void writeAudit(req, "ORDER_CREATED", "Order", order.id, {
       orderNo: order.orderNo,
-      totalWithTax,
+      subtotal: totals.subtotal,
+      discountAmt: totals.discountAmt,
+      taxTotal: totals.taxTotal,
+      totalWithTax: totals.totalWithTax,
       tableIds: requestedTableIds,
     });
   } catch (error) {
@@ -707,7 +754,7 @@ const updateOrderItems = async (req, res, next) => {
         id: { in: uniqueItemIds },
         restaurantId: req.restaurantId,
       },
-      include: { variants: true },
+      include: { variants: true, taxGroup: true },
     });
 
     if (menuItems.length !== uniqueItemIds.length) {
@@ -738,6 +785,12 @@ const updateOrderItems = async (req, res, next) => {
           note: item.note,
           variantId: existingItem.variantId,
           variantLabel: existingItem.variantLabel,
+          // Preserve existing tax snapshot for lines that were already priced
+          taxGroup: null, // snapshot preserved below via existingItem fields
+          _preservedSnapshot: existingItem,
+          hsnCode: existingItem.hsnCode || null,
+          sacCode: existingItem.sacCode || null,
+          isMrpItem: existingItem.isMrpItem || false,
         };
       }
 
@@ -770,6 +823,10 @@ const updateOrderItems = async (req, res, next) => {
         note: item.note,
         variantId,
         variantLabel,
+        taxGroup: menuItem.taxGroup || null,
+        hsnCode: menuItem.hsnCode || null,
+        sacCode: menuItem.sacCode || null,
+        isMrpItem: menuItem.isMrpItem || false,
       };
     });
 
@@ -801,15 +858,42 @@ const updateOrderItems = async (req, res, next) => {
       }
     }
 
-    const subtotal = roundMoney(
-      normalizedItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0,
-      ),
-    );
-    const taxRate = existingOrder.taxRate;
-    const tax = roundMoney((subtotal * taxRate) / 100);
-    const totalWithTax = roundMoney(subtotal + tax);
+    // Preserve existing discount on the order when recalculating
+    const existingDiscount = existingOrder.discountType
+      ? { type: existingOrder.discountType, value: existingOrder.discountValue }
+      : null;
+
+    const totals = calcOrderTotals(normalizedItems, existingDiscount);
+
+    // Build OrderItem payloads with tax snapshots
+    const orderItemsPayload = normalizedItems.map((item, idx) => {
+      const bd = totals.itemBreakdowns[idx];
+      const snap = item._preservedSnapshot;
+      return {
+        menuItemId: item.menuItemId,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        note: item.note || null,
+        variantId: item.variantId || null,
+        variantLabel: item.variantLabel || null,
+        // For preserved lines, keep their original tax snapshot
+        taxGroupName: snap ? snap.taxGroupName : (item.taxGroup ? item.taxGroup.name : null),
+        taxType: snap ? snap.taxType : bd.taxType,
+        cgstRate: snap ? snap.cgstRate : bd.cgstRate,
+        sgstRate: snap ? snap.sgstRate : bd.sgstRate,
+        igstRate: snap ? snap.igstRate : bd.igstRate,
+        vatRate: snap ? snap.vatRate : bd.vatRate,
+        cgstAmt: bd.cgstAmt, // always recalculated since qty may change
+        sgstAmt: bd.sgstAmt,
+        igstAmt: bd.igstAmt,
+        vatAmt: bd.vatAmt,
+        taxAmt: bd.taxAmt,
+        isMrpItem: item.isMrpItem || (snap ? snap.isMrpItem : false),
+        hsnCode: item.hsnCode || (snap ? snap.hsnCode : null),
+        sacCode: item.sacCode || (snap ? snap.sacCode : null),
+      };
+    });
 
     const order = await prisma.$transaction(async (tx) => {
       await tx.orderItem.deleteMany({
@@ -819,10 +903,15 @@ const updateOrderItems = async (req, res, next) => {
       return await tx.order.update({
         where: { id: existingOrder.id },
         data: {
-          subtotal,
-          tax,
-          totalWithTax,
-          items: { create: normalizedItems },
+          subtotal: totals.subtotal,
+          cgstTotal: totals.cgstTotal,
+          sgstTotal: totals.sgstTotal,
+          igstTotal: totals.igstTotal,
+          vatTotal: totals.vatTotal,
+          taxTotal: totals.taxTotal,
+          discountAmt: totals.discountAmt,
+          totalWithTax: totals.totalWithTax,
+          items: { create: orderItemsPayload },
         },
         include: orderInclude,
       });

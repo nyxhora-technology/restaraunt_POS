@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { getSitemapEntries } from "./src/content/seoContent.js";
 
 const parseBoolean = (value) => value?.trim().toLowerCase() === "true";
 
@@ -36,7 +37,37 @@ const normalizePublicSiteUrl = (rawValue, indexingEnabled, mode) => {
   return parsed.origin;
 };
 
-const createSeoPlugin = ({ publicSiteUrl, indexingEnabled }) => {
+const assertIndexingIdentity = ({
+  indexingEnabled,
+  mode,
+  brandName,
+  legalName,
+  supportEmail,
+  privacyEmail,
+}) => {
+  if (!indexingEnabled || mode !== "production") return;
+
+  const unresolved = [brandName, legalName].some(
+    (value) => !value || value.includes("%placeholder"),
+  );
+  const invalidEmail = [supportEmail, privacyEmail].some(
+    (value) => !value || !value.includes("@") || value.endsWith("@example.com"),
+  );
+
+  if (unresolved || invalidEmail) {
+    throw new Error(
+      "SEO indexing requires final BRAND_NAME, LEGAL_NAME, SUPPORT_EMAIL, and PRIVACY_EMAIL values",
+    );
+  }
+};
+
+const createSeoPlugin = ({
+  publicSiteUrl,
+  indexingEnabled,
+  brandName,
+  legalName,
+  defaultOgImage,
+}) => {
   let resolvedConfig;
   const robots = indexingEnabled
     ? `User-agent: *\nAllow: /\n\nSitemap: ${publicSiteUrl}/sitemap.xml\n`
@@ -48,12 +79,16 @@ const createSeoPlugin = ({ publicSiteUrl, indexingEnabled }) => {
       resolvedConfig = config;
     },
     transformIndexHtml(html) {
-      let transformed = html.replaceAll(
-        "__SEO_ROBOTS__",
-        indexingEnabled
-          ? "index,follow,max-image-preview:large"
-          : "noindex,nofollow",
-      );
+      let transformed = html
+        .replaceAll(
+          "__SEO_ROBOTS__",
+          indexingEnabled
+            ? "index,follow,max-image-preview:large"
+            : "noindex,nofollow",
+        )
+        .replaceAll("__BRAND_NAME__", brandName)
+        .replaceAll("__BRAND_LEGAL_NAME__", legalName)
+        .replaceAll("__DEFAULT_OG_IMAGE__", defaultOgImage);
 
       if (indexingEnabled) {
         return transformed
@@ -90,12 +125,18 @@ const createSeoPlugin = ({ publicSiteUrl, indexingEnabled }) => {
         ["/", "weekly", "1.0"],
         ["/terms", "yearly", "0.2"],
         ["/privacy", "yearly", "0.2"],
+        ...getSitemapEntries().map((entry) => [
+          entry.pathname,
+          entry.changefreq,
+          entry.priority,
+          entry.lastmod,
+        ]),
       ];
       const urls = entries
         .map(
-          ([pathname, changefreq, priority]) => `  <url>
+          ([pathname, changefreq, priority, lastmod]) => `  <url>
     <loc>${publicSiteUrl}${pathname}</loc>
-    <changefreq>${changefreq}</changefreq>
+${lastmod ? `    <lastmod>${lastmod}</lastmod>\n` : ""}    <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
   </url>`,
         )
@@ -118,13 +159,49 @@ export default defineConfig(({ mode }) => {
     indexingEnabled,
     mode,
   );
+  const brandName = env.BRAND_NAME || "%placeholder for name%";
+  const legalName = env.LEGAL_NAME || brandName;
+  const supportEmail = env.SUPPORT_EMAIL || "support@example.com";
+  const privacyEmail = env.PRIVACY_EMAIL || "privacy@example.com";
+  const defaultOgImage =
+    env.DEFAULT_OG_IMAGE_URL ||
+    (publicSiteUrl ? `${publicSiteUrl}/og-image.png` : "");
+  const socialLinks = {
+    linkedin: env.PUBLIC_LINKEDIN_URL || "",
+    instagram: env.PUBLIC_INSTAGRAM_URL || "",
+    x: env.PUBLIC_X_URL || "",
+  };
+
+  assertIndexingIdentity({
+    indexingEnabled,
+    mode,
+    brandName,
+    legalName,
+    supportEmail,
+    privacyEmail,
+  });
 
   return {
     define: {
       __PUBLIC_SITE_URL__: JSON.stringify(publicSiteUrl),
       __SEO_INDEXING_ENABLED__: JSON.stringify(indexingEnabled),
+      __BRAND_NAME__: JSON.stringify(brandName),
+      __LEGAL_NAME__: JSON.stringify(legalName),
+      __SUPPORT_EMAIL__: JSON.stringify(supportEmail),
+      __PRIVACY_EMAIL__: JSON.stringify(privacyEmail),
+      __DEFAULT_OG_IMAGE__: JSON.stringify(defaultOgImage),
+      __SOCIAL_LINKS__: JSON.stringify(socialLinks),
     },
-    plugins: [react(), createSeoPlugin({ publicSiteUrl, indexingEnabled })],
+    plugins: [
+      react(),
+      createSeoPlugin({
+        publicSiteUrl,
+        indexingEnabled,
+        brandName,
+        legalName,
+        defaultOgImage,
+      }),
+    ],
     server: {
       proxy: {
         "/api": {
@@ -153,8 +230,7 @@ export default defineConfig(({ mode }) => {
                 },
               },
             },
-          }
-        ),
+          }),
     },
   };
 });

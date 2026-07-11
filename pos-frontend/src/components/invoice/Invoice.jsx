@@ -180,10 +180,56 @@ const Invoice = ({
               <span>Subtotal</span>
               <span>{money(orderInfo.subtotal)}</span>
             </div>
-            <div className="receipt-total-row flex justify-between">
-              <span>Tax ({Number(orderInfo.taxRate || 0)}%)</span>
-              <span>{money(orderInfo.tax)}</span>
-            </div>
+
+            {/* Discount line */}
+            {Number(orderInfo.discountAmt) > 0 && (
+              <div className="receipt-total-row flex justify-between text-green-700">
+                <span>
+                  Discount
+                  {orderInfo.discountType === "PERCENT"
+                    ? ` (${orderInfo.discountValue}%)`
+                    : orderInfo.discountType === "FLAT"
+                    ? " (Flat)"
+                    : ""}
+                </span>
+                <span>-{money(orderInfo.discountAmt)}</span>
+              </div>
+            )}
+
+            {/* Per-type tax breakdown (new orders) */}
+            {Number(orderInfo.cgstTotal) > 0 && (
+              <div className="receipt-total-row flex justify-between text-gray-600">
+                <span>CGST</span>
+                <span>{money(orderInfo.cgstTotal)}</span>
+              </div>
+            )}
+            {Number(orderInfo.sgstTotal) > 0 && (
+              <div className="receipt-total-row flex justify-between text-gray-600">
+                <span>SGST</span>
+                <span>{money(orderInfo.sgstTotal)}</span>
+              </div>
+            )}
+            {Number(orderInfo.igstTotal) > 0 && (
+              <div className="receipt-total-row flex justify-between text-gray-600">
+                <span>IGST</span>
+                <span>{money(orderInfo.igstTotal)}</span>
+              </div>
+            )}
+            {Number(orderInfo.vatTotal) > 0 && (
+              <div className="receipt-total-row flex justify-between text-gray-600">
+                <span>VAT (Alcohol/Excise)</span>
+                <span>{money(orderInfo.vatTotal)}</span>
+              </div>
+            )}
+
+            {/* Legacy fallback — for old orders that only have taxRate/tax */}
+            {!orderInfo.cgstTotal && !orderInfo.vatTotal && Number(orderInfo.tax) > 0 && (
+              <div className="receipt-total-row flex justify-between text-gray-600">
+                <span>Tax ({Number(orderInfo.taxRate || 0)}%)</span>
+                <span>{money(orderInfo.tax)}</span>
+              </div>
+            )}
+
             <div className="receipt-total-row receipt-grand-total mt-2 flex justify-between border-t border-dashed pt-2 font-bold">
               <span>Total Paid</span>
               <span>{money(orderInfo.totalWithTax)}</span>
